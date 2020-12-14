@@ -53,7 +53,7 @@ int main() {
 	// MyMatrix cubeTransformed = cubeMatrix;
 
 	// Projection
-	MyVector camEye(3, vector<double>{2, 3, 3});
+	MyVector camEye(3, vector<double>{2, 3, 0});
 	MyVector camAt(3, vector<double>{0, 0, 0});
 	MyVector camUp(3, vector<double>{0, 1, 0});
 	MyVector camAxisZ = camAt.add(camEye.scalar(-1)).normalize();
