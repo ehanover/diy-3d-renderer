@@ -5,6 +5,7 @@
 
 CXX = g++
 CXXFLAGS = -Wall -g
+# CXXFLAGS = -O2
 
 TARGET_EXEC ?= a.out
 BUILD_DIR ?= ./build
@@ -15,8 +16,8 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 DEPS_FLAGS = -MMD -MP # These flags generate .d files which list source file dependencies based on header imports
-INCLUDES = -I/usr/include/SFML
-LIBS = -L/usr/lib/x86_64-linux-gnu/ -lsfml-graphics -lsfml-window -lsfml-system
+INCLUDES = -I/usr/include/SDL2 -D_REENTRANT # Find with sdl2-config --cflags (could this be automated?)
+LIBS = -lSDL2 # Find with sdl2-config --libs
 
 # Binary
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)

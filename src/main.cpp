@@ -1,8 +1,8 @@
 #include "mymatrix.h"
 #include "myvector.h"
 
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_timer.h>
 
 #include <iostream>
 #include <string>
@@ -53,7 +53,7 @@ int main() {
 	// MyMatrix cubeTransformed = cubeMatrix;
 
 	// Projection
-	MyVector camEye(3, vector<double>{2, 3, 0});
+	MyVector camEye(3, vector<double>{2, 3, 3});
 	MyVector camAt(3, vector<double>{0, 0, 0});
 	MyVector camUp(3, vector<double>{0, 1, 0});
 	MyVector camAxisZ = camAt.add(camEye.scalar(-1)).normalize();
@@ -80,42 +80,77 @@ int main() {
 		SIZE, 0, 0, 0,
 		0, SIZE, 0, 0,
 		0, 0, 1, (1/d),
-		0, 0, 0, 0	
+		0, 0, 0, 0
 	};
 	MyMatrix perspectiveMat(4, 4, perspectiveVec);
 	MyMatrix cubeMatPerspective = cubeMatProjected.multiply(perspectiveMat);
 	// return 0;
 	
 
-	sf::RenderWindow window(sf::VideoMode(SIZE, SIZE), "My window");
-	window.setFramerateLimit(30);
 
-	while (window.isOpen()) {
-		// check all the window's events that were triggered since the last iteration of the loop
-		sf::Event event;
-		while (window.pollEvent(event)) {
-			if (event.type == sf::Event::Closed)
-				window.close();
+
+
+	// https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
+	// Look at https://stackoverflow.com/questions/33304351/ for fast pixel drawing
+	if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+		cout << "SDL_Init Error: " << SDL_GetError() << endl;
+	}
+	SDL_Window* window = SDL_CreateWindow("My Window", 
+		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
+		SIZE, SIZE, SDL_WINDOW_SHOWN);
+	if(window == nullptr){
+		cout << "SDL_CreateWindow Error: " << SDL_GetError() << endl;
+		SDL_Quit();
+		return 1;
+	}
+
+	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	if(renderer == nullptr){
+		SDL_DestroyWindow(window);
+		cout << "SDL_CreateRenderer Error: " << SDL_GetError() << endl;
+		SDL_Quit();
+		return 1;
+	}
+
+	SDL_Event event;
+	Uint32 fpsFrameCount = 0;
+	Uint32 fpsLastTime = SDL_GetTicks();
+
+	while(1) {
+		// Check for events
+		if(SDL_PollEvent(&event) && event.type == SDL_QUIT) {
+			break;
 		}
 
-		// Drawing
-		window.clear(sf::Color::Black);
-
-		sf::RectangleShape boundsRect(sf::Vector2f(SIZE, SIZE));
-		boundsRect.setPosition(0, 0);
-		boundsRect.setFillColor(sf::Color(30,40,50));
-		window.draw(boundsRect);
+		// Draw
+		SDL_SetRenderDrawColor(renderer, 0x30, 0x40, 0x50, 0xFF);
+		SDL_RenderClear(renderer);
 
 		for(int i=0; i<12; i++) {
 			double w = cubeMatPerspective.data()[4*i + 3];
 			double x = (1 * (cubeMatPerspective.data()[4*i + 0]/w)) + (SIZE/2);
 			double y = (1 * (cubeMatPerspective.data()[4*i + 1]/w)) + (SIZE/2);
-			sf::CircleShape circle(5);
-			circle.setPosition(x, y);
-			window.draw(circle);
+
+			SDL_Rect fillRect{(int)x, (int)y, 5, 5};
+			SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x80, 0xFF);
+			SDL_RenderFillRect(renderer, &fillRect);
 		}
-		window.display();
+		SDL_RenderPresent(renderer);
+
+		// Calculate and print FPS
+		fpsFrameCount++;
+		Uint32 fpsCurrentTime = SDL_GetTicks();
+		if(fpsLastTime < fpsCurrentTime - 1500) {
+			cout << "FPS: " << (1000.f * fpsFrameCount) / (fpsCurrentTime - fpsLastTime) << endl;
+			fpsFrameCount = 0;
+			fpsLastTime = fpsCurrentTime;
+		}
 
 	}
+
+	// Clean up
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	SDL_Quit();
 	return 0;
 }
