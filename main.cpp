@@ -14,8 +14,8 @@ using namespace std;
 
 int main() {
 
-	double cubeSize = 0.2;
 	// http://paulbourke.net/geometry/polygonise/
+	double cubeSize = 0.5;
 	double verts[8][3] = {
 		{-cubeSize,-cubeSize,-cubeSize},
 		{cubeSize,-cubeSize,-cubeSize},
@@ -47,7 +47,7 @@ int main() {
 		}
 		cubeVerts.push_back(1);
 	}
-	MyMatrix cubeMatrix(8, 4, cubeVerts);
+	MyMatrix cubeMat(8, 4, cubeVerts);
 
 	// Transformation
 	// MyMatrix cubeTransformed = cubeMatrix;
@@ -59,28 +59,34 @@ int main() {
 	MyVector camAxisZ = camAt.add(camEye.scalar(-1)).normalize();
 	MyVector camAxisX = camUp.cross(camAxisZ).normalize();
 	MyVector camAxisY = camAxisZ.cross(camAxisX).normalize();
+
 	cout << "camAxisZ=" << camAxisZ << endl;
 	cout << "camAxisX=" << camAxisX << endl;
 	cout << "camAxisY=" << camAxisY << endl;
+	cout << endl;
 
-	// vector<double> projectionVec{
-	// 	camAxisX.elem(0), camAxisY.elem(0), camAxisZ.elem(0), 0, 
-	// 	camAxisX.elem(1), camAxisY.elem(1), camAxisZ.elem(1), 0, 
-	// 	camAxisX.elem(2), camAxisY.elem(2), camAxisZ.elem(2), 0, 
-	// 	-1*(camAxisX.dot(camEye)), -1*(camAxisY.dot(camEye)), -1*(camAxisZ.dot(camEye)), 1
-	// };
-	// MyMatrix projectionMat(4, 4, projectionVec);
-	// cout << projectionMat << endl;
+	vector<double> projectionVec{
+		camAxisX.elem(0), camAxisY.elem(0), camAxisZ.elem(0), 0, 
+		camAxisX.elem(1), camAxisY.elem(1), camAxisZ.elem(1), 0, 
+		camAxisX.elem(2), camAxisY.elem(2), camAxisZ.elem(2), 0, 
+		-1*(camAxisX.dot(camEye)), -1*(camAxisY.dot(camEye)), -1*(camAxisZ.dot(camEye)), 1
+	};
+	MyMatrix projectionMat(4, 4, projectionVec);
+	MyMatrix cubeMatProjected = cubeMat.multiply(projectionMat);
 
 	// Perspective
-	// MyMatrix cubePerspective = cubeTransformed;
-
-
-
-
-
+	double d = 1;
+	vector<double> perspectiveVec{
+		SIZE, 0, 0, 0,
+		0, SIZE, 0, 0,
+		0, 0, 1, (1/d),
+		0, 0, 0, 0	
+	};
+	MyMatrix perspectiveMat(4, 4, perspectiveVec);
+	MyMatrix cubeMatPerspective = cubeMatProjected.multiply(perspectiveMat);
 	// return 0;
 	
+
 	sf::RenderWindow window(sf::VideoMode(SIZE, SIZE), "My window");
 	window.setFramerateLimit(30);
 
@@ -101,10 +107,15 @@ int main() {
 		window.draw(boundsRect);
 
 		for(int i=0; i<12; i++) {
-
+			double w = cubeMatPerspective.data()[4*i + 3];
+			double x = (1 * (cubeMatPerspective.data()[4*i + 0]/w)) + (SIZE/2);
+			double y = (1 * (cubeMatPerspective.data()[4*i + 1]/w)) + (SIZE/2);
+			sf::CircleShape circle(5);
+			circle.setPosition(x, y);
+			window.draw(circle);
 		}
-		
 		window.display();
+
 	}
 	return 0;
 }

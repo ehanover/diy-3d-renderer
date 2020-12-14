@@ -3,12 +3,20 @@
 #include <iostream>
 #include <vector>
 
-MyMatrix::MyMatrix(size_t r, size_t c, std::vector<double> d) : 
-		mRows(r), mCols(c), mData(d) {
+MyMatrix::MyMatrix(size_t r, size_t c, std::vector<double> d) { 
+	mRows = r;
+	mCols = c;
+	mData = new std::vector<double>(d);
 }
 
-MyMatrix::MyMatrix(const MyMatrix& o) : 
-	mRows(o.rows()), mCols(o.cols()), mData(o.data()) {
+MyMatrix::MyMatrix(const MyMatrix& o) {
+	mRows = o.rows();
+	mCols = o.cols();
+	mData = new std::vector<double>(o.data());
+}
+
+MyMatrix::~MyMatrix() {
+	delete mData;
 }
 
 size_t MyMatrix::rows() const {
@@ -20,33 +28,55 @@ size_t MyMatrix::cols() const {
 }
 
 const std::vector<double>& MyMatrix::data() const {
-	return mData;
-}
-
-const double& MyMatrix::elem(size_t r, size_t c) const {
-	return mData[r * cols() + c];
+	return *mData;
 }
 
 const double& MyMatrix::elem(size_t i) const {
-	return mData[i];
+	return mData->at(i);
 }
 
-// Operators
-
-void MyMatrix::operator+=(const MyMatrix& rhs) {
-	if(rhs.rows() != rows() || rhs.cols() != cols()) {
-		std::cerr << "Error: tried adding matrices of different sizes, skipping" << std::endl;
-		return;
-	}
-	for(size_t i=0; i<mData.size(); i++) {
-		mData[i] += rhs.elem(i);
-	}
+const double& MyMatrix::elem(size_t r, size_t c) const {
+	return elem(r * cols() + c);
 }
 
-void MyMatrix::operator*=(const double& rhs) {
-	for(size_t i=0; i<mData.size(); i++) {
-		mData[i] *= rhs;
+MyMatrix MyMatrix::add(const MyMatrix& o) {
+	if(o.rows() != rows() || o.cols() != cols()) {
+		std::cerr << "Error: tried adding matrices with wrong sizes, skipping" << std::endl;
+		return *this;
 	}
+	std::vector<double> ret(rows() * cols());
+	for(size_t i=0; i<ret.size(); i++) {
+		ret[i] = mData->at(i) + o.elem(i);
+	}
+	return MyMatrix(rows(), cols(), ret);
+}
+
+MyMatrix MyMatrix::multiply(double o) {
+	std::vector<double> ret(rows() * cols());
+	for(size_t i=0; i<ret.size(); i++) {
+		ret[i] = mData->at(i) * o;
+	}
+	return MyMatrix(rows(), cols(), ret);
+}
+
+MyMatrix MyMatrix::multiply(const MyMatrix& o) {
+	// https://www.baeldung.com/cs/MyMatrix-multiplication-algorithms
+	if(cols() != o.rows()) {
+		std::cerr << "Error: tried multiplying matrices with wrong sizes, skipping" << std::endl;
+		return *this;
+	}
+	size_t newRows = rows();
+	size_t newCols = o.cols();
+	std::vector<double> r(newRows * newCols);
+	for(size_t i=0; i<rows(); i++) {
+		for(size_t j=0; j<o.cols(); j++) {
+			r[i*newCols + j] = 0;
+			for(size_t k=0; k<o.rows(); k++) {
+				r[i*newCols + j] = r[i*newCols + j] + (elem(i, k) * o.elem(k, j));
+			}
+		}
+	}
+	return MyMatrix(newRows, newCols, r);
 }
 
 std::ostream& operator<<(std::ostream& out, const MyMatrix& MyMatrix) {
@@ -60,36 +90,4 @@ std::ostream& operator<<(std::ostream& out, const MyMatrix& MyMatrix) {
 		}
 	}
 	return out;
-}
-
-MyMatrix operator+(const MyMatrix& lhs, const MyMatrix& rhs) {
-	MyMatrix r(lhs);
-	r += rhs;
-	return r;
-}
-
-MyMatrix operator*(const double scalar, const MyMatrix& rhs) {
-	MyMatrix r(rhs);
-	r *= scalar;
-	return r;
-}
-
-MyMatrix operator*(const MyMatrix& lhs, const MyMatrix& rhs) {
-	// https://www.baeldung.com/cs/MyMatrix-multiplication-algorithms
-	if(lhs.cols() != rhs.rows()) {
-		std::cerr << "Error: tried multiplying matrices with wrong sizes, skipping" << std::endl;
-		return lhs;
-	}
-	size_t newRows = lhs.rows();
-	size_t newCols = rhs.cols();
-	std::vector<double> r(newRows * newCols);
-	for(size_t i=0; i<lhs.rows(); i++) {
-		for(size_t j=0; j<rhs.cols(); j++) {
-			r[i*newCols + j] = 0;
-			for(size_t k=0; k<rhs.rows(); k++) {
-				r[i*newCols + j] = r[i*newCols + j] + (lhs.elem(i, k) * rhs.elem(k, j));
-			}
-		}
-	}
-	return MyMatrix(newRows, newCols, r);
 }

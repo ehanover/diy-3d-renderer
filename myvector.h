@@ -10,6 +10,7 @@ public:
 
 	MyVector(size_t s, std::vector<double> d);
 	MyVector(const MyVector& o);
+	~MyVector();
 
 	const double& elem(size_t i) const;
 
@@ -17,21 +18,16 @@ public:
 	const std::vector<double>& data() const;
 	double magnitude() const;
 
-	MyVector& add(const MyVector& rhs);
-	MyVector& scalar(const double& rhs);
+	MyVector add(const MyVector& rhs);
+	MyVector scalar(const double& rhs);
 	double dot(const MyVector& rhs);
-	MyVector& cross(const MyVector& rhs);
-	MyVector& normalize();
-
-	void operator+=(const MyVector& rhs);
-	void operator*=(const double& rhs);
+	MyVector cross(const MyVector& rhs);
+	MyVector normalize();
 
 private:
 	size_t mSize;
-	std::vector<double> mData;
+	std::vector<double>* mData;
 
 };
 
 std::ostream& operator<<(std::ostream& out, const MyVector& MyVector);
-MyVector operator+(const MyVector& lhs, const MyVector& rhs);
-MyVector operator*(const double scalar, const MyVector& rhs);
