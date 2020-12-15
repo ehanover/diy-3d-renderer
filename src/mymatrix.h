@@ -8,10 +8,9 @@
 class MyMatrix {
 
 public:
-	// Ctor and Dtor omitted (?)
+	MyMatrix();
 	MyMatrix(size_t r, size_t c, std::vector<double> d);
 	MyMatrix(const MyMatrix& o);
-	~MyMatrix();
 
 	// Calculate and return a reference to the specified element.
 	const double& elem(size_t i) const;
@@ -24,6 +23,7 @@ public:
 	size_t cols() const;
 	const std::vector<double>& data() const;
 
+	// void setData(std::vector<double> data);
 	MyMatrix add(const MyMatrix& o);
 	MyMatrix multiply(double o);
 	MyMatrix multiply(const MyMatrix& o);
@@ -31,7 +31,7 @@ public:
 private:
 	size_t mRows;
 	size_t mCols;
-	std::vector<double>* mData;
+	std::vector<double> mData;
 
 };
 

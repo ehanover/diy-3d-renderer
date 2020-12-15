@@ -3,20 +3,16 @@
 #include <iostream>
 #include <vector>
 
-MyMatrix::MyMatrix(size_t r, size_t c, std::vector<double> d) { 
-	mRows = r;
-	mCols = c;
-	mData = new std::vector<double>(d);
+MyMatrix::MyMatrix() :
+	mRows(0), mCols(0), mData() {
 }
 
-MyMatrix::MyMatrix(const MyMatrix& o) {
-	mRows = o.rows();
-	mCols = o.cols();
-	mData = new std::vector<double>(o.data());
+MyMatrix::MyMatrix(size_t r, size_t c, std::vector<double> d) : // TODO vector d can be a reference
+	mRows(r), mCols(c), mData(std::vector<double>(d)) {
 }
 
-MyMatrix::~MyMatrix() {
-	delete mData;
+MyMatrix::MyMatrix(const MyMatrix& o) :
+	mRows(o.rows()), mCols(o.cols()), mData(std::vector<double>(o.data())) {
 }
 
 size_t MyMatrix::rows() const {
@@ -28,11 +24,11 @@ size_t MyMatrix::cols() const {
 }
 
 const std::vector<double>& MyMatrix::data() const {
-	return *mData;
+	return mData;
 }
 
 const double& MyMatrix::elem(size_t i) const {
-	return mData->at(i);
+	return mData.at(i);
 }
 
 const double& MyMatrix::elem(size_t r, size_t c) const {
@@ -46,7 +42,8 @@ MyMatrix MyMatrix::add(const MyMatrix& o) {
 	}
 	std::vector<double> ret(rows() * cols());
 	for(size_t i=0; i<ret.size(); i++) {
-		ret[i] = mData->at(i) + o.elem(i);
+		// ret[i] = mData->at(i) + o.elem(i);
+		ret[i] = mData[i] + o.elem(i);
 	}
 	return MyMatrix(rows(), cols(), ret);
 }
@@ -54,7 +51,8 @@ MyMatrix MyMatrix::add(const MyMatrix& o) {
 MyMatrix MyMatrix::multiply(double o) {
 	std::vector<double> ret(rows() * cols());
 	for(size_t i=0; i<ret.size(); i++) {
-		ret[i] = mData->at(i) * o;
+		// ret[i] = mData->at(i) * o;
+		ret[i] = mData[i] * o;
 	}
 	return MyMatrix(rows(), cols(), ret);
 }

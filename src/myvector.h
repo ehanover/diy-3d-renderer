@@ -8,9 +8,8 @@ class MyVector {
 
 public:
 
-	MyVector(size_t s, std::vector<double> d);
+	MyVector(std::vector<double> d);
 	MyVector(const MyVector& o);
-	~MyVector();
 
 	const double& elem(size_t i) const;
 
@@ -26,7 +25,8 @@ public:
 
 private:
 	size_t mSize;
-	std::vector<double>* mData;
+	// std::vector<double>* mData;
+	std::vector<double> mData;
 
 };
 
