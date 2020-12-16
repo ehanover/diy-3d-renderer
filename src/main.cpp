@@ -6,6 +6,7 @@
 #include <SDL2/SDL_timer.h>
 
 #include <iostream>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -17,36 +18,21 @@ int main() {
 
 	// http://paulbourke.net/geometry/polygonise/
 	double cubeSize = 0.5;
-	vector<array<double, 4>> cubeVerts = {
-		{-cubeSize,-cubeSize,-cubeSize,1},
-		{cubeSize,-cubeSize,-cubeSize,1},
-		{cubeSize,-cubeSize,cubeSize,1},
-		{-cubeSize,-cubeSize,cubeSize,1},
-		{-cubeSize,cubeSize,-cubeSize,1},
-		{cubeSize,cubeSize,-cubeSize,1},
-		{cubeSize,cubeSize,cubeSize,1},
-		{-cubeSize,cubeSize,cubeSize,1}
+	vector<double> cubeVerts = {
+		-cubeSize,-cubeSize,-cubeSize,1,
+		cubeSize,-cubeSize,-cubeSize,1,
+		cubeSize,-cubeSize,cubeSize,1,
+		-cubeSize,-cubeSize,cubeSize,1,
+		-cubeSize,cubeSize,-cubeSize,1,
+		cubeSize,cubeSize,-cubeSize,1,
+		cubeSize,cubeSize,cubeSize,1,
+		-cubeSize,cubeSize,cubeSize,1
 	};
-	/* int cubeEdges[12][2] = {
-		{0,1},
-		{1,2},
-		{2,3},
-		{3,0},
-		{4,5},
-		{5,6},
-		{6,7},
-		{7,4},
-		{4,0},
-		{5,1},
-		{6,2},
-		{7,3}
-	}; */
 	vector<array<size_t, 3>> cubeTris;
-	Object cubeObj(cubeVerts, cubeTris);
-	
+	Object cubeObj(MyMatrix(8, 4, cubeVerts), cubeTris);
 
-	// https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
-	// Look at https://stackoverflow.com/questions/33304351/ for fast pixel drawing
+	// Basic SDL: https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
+	// Fast pixel drawing: https://stackoverflow.com/questions/33304351/
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 		cout << "SDL_Init Error: " << SDL_GetError() << endl;
 	}
@@ -68,11 +54,13 @@ int main() {
 	}
 
 	Renderer myrenderer(renderer);
-	vector<Object> objs{cubeObj};
+	vector<reference_wrapper<Object>> objs{cubeObj}; // Should this store pointers/references?
 
 	SDL_Event event;
+	Uint32 fpsTimeNow = SDL_GetTicks();
+	Uint32 fpsLastFrameTime = 0;
 	Uint32 fpsFrameCount = 0;
-	Uint32 fpsLastTime = SDL_GetTicks();
+	Uint32 fpsLastPrintTime = fpsTimeNow;
 
 	while(1) {
 		// Check for events
@@ -80,24 +68,28 @@ int main() {
 			break;
 		}
 
+		// Update
+		fpsTimeNow = SDL_GetTicks();
+		double deltaTime = (fpsTimeNow - fpsLastFrameTime);// / 1000.0;
+		fpsLastFrameTime = fpsTimeNow;
+
+		cubeObj.setRotation( cubeObj.rotation().add(MyVector({0, 0.0005*deltaTime, 0})) );
+
 		// Draw
 		SDL_SetRenderDrawColor(renderer, 0x30, 0x40, 0x50, 0xFF);
 		SDL_RenderClear(renderer);
-
 		myrenderer.render(objs);
-
 		SDL_RenderPresent(renderer);
-
-		// TODO calculate deltaTime for use in transformations
 
 		// Calculate and print FPS
 		fpsFrameCount++;
 		Uint32 fpsCurrentTime = SDL_GetTicks();
-		if(fpsCurrentTime - fpsLastTime > 2000) {
-			cout << "FPS: " << (1000.f * fpsFrameCount) / (fpsCurrentTime - fpsLastTime) << endl;
+		if(fpsCurrentTime - fpsLastPrintTime > 2000) {
+			cout << "FPS: " << (int) ((1000.f * fpsFrameCount) / (fpsCurrentTime - fpsLastPrintTime)) << endl;
 			fpsFrameCount = 0;
-			fpsLastTime = fpsCurrentTime;
+			fpsLastPrintTime = fpsCurrentTime;
 		}
+
 		// break;
 
 	}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mymatrix.h"
 #include "myvector.h"
 #include <array>
 #include <cstddef>
@@ -8,22 +9,25 @@
 class Object {
 
 public:
-	Object(std::vector<std::array<double, 4>> vs, std::vector<std::array<size_t, 3>> ts);
+	Object(MyMatrix vs, std::vector<std::array<size_t, 3>> ts);
 
-	std::vector<std::array<double, 4>> verts() const;
+	MyMatrix verts() const;
 	std::vector<std::array<size_t, 3>> tris() const;
 
 	MyVector position() const;
+	MyVector rotation() const;
 	MyVector scale() const;
 
-	void setPosition(MyVector d);
-	void setScale(MyVector d);
+	void setPosition(MyVector p);
+	void setRotation(MyVector r);
+	void setScale(MyVector s);
 
 private:
-	std::vector<std::array<double, 4>> mVerts;
+	MyMatrix mVerts;
 	std::vector<std::array<size_t, 3>> mTris;
 
 	MyVector mPosition;
+	MyVector mRotation;
 	MyVector mScale;
 
 };
