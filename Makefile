@@ -4,10 +4,10 @@
 # Symbols like $@: https://stackoverflow.com/a/3220288
 
 CXX = g++
-CXXFLAGS = -Wall -g
-# CXXFLAGS = -O2
+# CXXFLAGS = -Wall -g
+CXXFLAGS = -O2
 
-TARGET_EXEC ?= a.out
+TARGET_EXEC ?= diy-opengl
 BUILD_DIR ?= ./build
 SRC_DIRS ?= ./src
 
@@ -30,7 +30,10 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 
 -include $(DEPS) # Lets make know about source file dependencies from .d files
 
-.PHONY: clean
+.PHONY: install
+install:
+	install -m 755 build/diy-opengl diy-opengl
 
+.PHONY: clean
 clean:
 	rm -r $(BUILD_DIR)

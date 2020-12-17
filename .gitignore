@@ -1,4 +1,3 @@
+diy-opengl
 build/
-*.o
-*.out
 .vscode
