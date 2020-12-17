@@ -35,55 +35,54 @@ const double& MyMatrix::elem(size_t r, size_t c) const {
 	return elem(r * cols() + c);
 }
 
-MyMatrix MyMatrix::add(const MyMatrix& o) {
+MyMatrix& MyMatrix::add(const MyMatrix& o) {
 	if(o.rows() != rows() || o.cols() != cols()) {
 		std::cerr << "Error: tried adding matrices with wrong sizes, skipping" << std::endl;
 		return *this;
 	}
 	std::vector<double> ret(rows() * cols());
-	for(size_t i=0; i<ret.size(); i++) {
-		// ret[i] = mData->at(i) + o.elem(i);
-		ret[i] = mData[i] + o.elem(i);
+	for(size_t i=0; i<rows() * cols(); i++) {
+		mData[i] += o.elem(i);
 	}
-	return MyMatrix(rows(), cols(), ret);
+	return *this;
 }
 
-MyMatrix MyMatrix::multiply(double o) {
-	std::vector<double> ret(rows() * cols());
-	for(size_t i=0; i<ret.size(); i++) {
-		// ret[i] = mData->at(i) * o;
-		ret[i] = mData[i] * o;
+MyMatrix& MyMatrix::multiply(double o) {
+	for(size_t i=0; i<rows() * cols(); i++) {
+		mData[i] *= o;
 	}
-	return MyMatrix(rows(), cols(), ret);
+	return *this;
 }
 
-MyMatrix MyMatrix::multiply(const MyMatrix& o) {
+MyMatrix& MyMatrix::multiply(const MyMatrix& o) {
 	// https://www.baeldung.com/cs/MyMatrix-multiplication-algorithms
 	if(cols() != o.rows()) {
 		std::cerr << "Error: tried multiplying matrices with wrong sizes, skipping" << std::endl;
-		return *this;
 	}
 	size_t newRows = rows();
 	size_t newCols = o.cols();
-	std::vector<double> r(newRows * newCols);
-	for(size_t i=0; i<rows(); i++) {
-		for(size_t j=0; j<o.cols(); j++) {
-			r[i*newCols + j] = 0;
+	std::vector<double> d(newRows * newCols);
+	for(size_t i=0; i<newRows; i++) {
+		for(size_t j=0; j<newCols; j++) {
+			d[i*newCols + j] = 0;
 			for(size_t k=0; k<o.rows(); k++) {
-				r[i*newCols + j] = r[i*newCols + j] + (elem(i, k) * o.elem(k, j));
+				d[i*newCols + j] += (elem(i, k) * o.elem(k, j));
 			}
 		}
 	}
-	return MyMatrix(newRows, newCols, r);
+	mData = d;
+	mRows = newRows;
+	mCols = newCols;
+	return *this;
 }
 
-std::ostream& operator<<(std::ostream& out, const MyMatrix& MyMatrix) {
+std::ostream& operator<<(std::ostream& out, const MyMatrix& m) {
 	out.precision(3);
-	for(size_t i=0; i<MyMatrix.rows(); i++) {
-		for(size_t j=0; j<MyMatrix.cols(); j++) {
-			out << std::fixed << MyMatrix.elem(i, j) << " ";
+	for(size_t i=0; i<m.rows(); i++) {
+		for(size_t j=0; j<m.cols(); j++) {
+			out << std::fixed << m.elem(i, j) << " ";
 		}
-		if(i < MyMatrix.rows()-1) {
+		if(i < m.rows()-1) {
 			out << std::endl;
 		}
 	}

@@ -33,27 +33,7 @@ double MyVector::magnitude() const {
 	return sqrt(sum);
 }
 
-MyVector MyVector::add(const MyVector& rhs) {
-	if(rhs.size() != size()) {
-		std::cerr << "Error: tried adding vectors of different sizes, skipping" << std::endl;
-		return *this;
-	}
-	std::vector<double> ret(data());
-	for(size_t i=0; i<size(); i++) {
-		ret[i] += rhs.elem(i);
-	}
-	return MyVector(ret);
-}
-
-MyVector MyVector::scalar(const double& rhs) {
-	std::vector<double> ret(data());
-	for(size_t i=0; i<size(); i++) {
-		ret[i] *= rhs;
-	}
-	return MyVector(ret);
-}
-
-double MyVector::dot(const MyVector& rhs) {
+double MyVector::dot(const MyVector& rhs) const {
 	if(rhs.size() != size()) {
 		std::cerr << "Error: tried dotting vectors of different sizes, returning 0" << std::endl;
 		return 0;
@@ -67,7 +47,27 @@ double MyVector::dot(const MyVector& rhs) {
 	return sum;
 }
 
-MyVector MyVector::cross(const MyVector& rhs) {
+MyVector& MyVector::add(const MyVector& rhs) {
+	if(rhs.size() != size()) {
+		std::cerr << "Error: tried adding vectors of different sizes, skipping" << std::endl;
+		return *this;
+	}
+	for(size_t i=0; i<size(); i++) {
+		mData[i] += rhs.elem(i);
+	}
+	return *this;
+}
+
+MyVector& MyVector::scalar(const double& rhs) {
+	for(size_t i=0; i<size(); i++) {
+		mData[i] *= rhs;
+	}
+	return *this;
+}
+
+
+
+MyVector& MyVector::cross(const MyVector& rhs) {
 	if(rhs.size() != size()) {
 		std::cerr << "Error: tried crossing vectors of different sizes, skipping" << std::endl;
 		return *this;
@@ -79,25 +79,21 @@ MyVector MyVector::cross(const MyVector& rhs) {
 	double nx = elem(1)*rhs.elem(2) - elem(2)*rhs.elem(1);
 	double ny = elem(2)*rhs.elem(0) - elem(0)*rhs.elem(2);
 	double nz = elem(0)*rhs.elem(1) - elem(1)*rhs.elem(0);
-	// mData[0] = nx;
-	// mData[1] = ny;
-	// mData[2] = nz;
-	return MyVector(std::vector<double>{nx, ny, nz});
+	mData[0] = nx;
+	mData[1] = ny;
+	mData[2] = nz;
+	return *this;
 }
 
-MyVector MyVector::normalize() {
+MyVector& MyVector::normalize() {
 	double m = magnitude();
-	std::vector<double> ret(data());
-	for(size_t i=0; i<size(); i++) {
-		ret[i] /= m;
-	}
-	return MyVector(ret);
+	return scalar(1/m);
 }
 
-std::ostream& operator<<(std::ostream& out, const MyVector& MyVector) {
+std::ostream& operator<<(std::ostream& out, const MyVector& v) {
 	out.precision(3);
-	for(size_t i=0; i<MyVector.size(); i++) {
-		out << MyVector.elem(i) << " ";
+	for(size_t i=0; i<v.size(); i++) {
+		out << v.elem(i) << " ";
 	}
 	return out;
 }

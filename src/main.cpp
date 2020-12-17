@@ -10,14 +10,14 @@
 #include <string>
 #include <vector>
 
-#define SIZE 600
+#define SIZE 350
 
 using namespace std;
 
 int main() {
 
 	// http://paulbourke.net/geometry/polygonise/
-	double cubeSize = 0.5;
+	double cubeSize = 0.4;
 	vector<double> cubeVerts = {
 		-cubeSize,-cubeSize,-cubeSize,1,
 		cubeSize,-cubeSize,-cubeSize,1,
@@ -28,8 +28,37 @@ int main() {
 		cubeSize,cubeSize,cubeSize,1,
 		-cubeSize,cubeSize,cubeSize,1
 	};
-	vector<array<size_t, 3>> cubeTris;
+	vector<array<size_t, 3>> cubeTris = {
+		{0, 3, 2},
+		{1, 0, 2},
+		{5, 6, 1},
+		{6, 2, 1},
+		{4, 7, 6},
+		{5, 4, 6},
+		{7, 4, 0},
+		{3, 7, 0},
+		{4, 5, 0},
+		{5, 1, 0},
+		{6, 7, 3},
+		// {6, 2, 3} // reverse, cw
+		{2, 6, 3}
+	};
 	Object cubeObj(MyMatrix(8, 4, cubeVerts), cubeTris);
+
+	double pyramidSize = 0.24;
+	double pyramidOffset = 0.7;
+	vector<double> pyramidVerts = {
+		pyramidOffset-pyramidSize,0,pyramidSize,1,
+		pyramidOffset-pyramidSize,0,-pyramidSize,1,
+		pyramidOffset+pyramidSize,0,-pyramidSize,1,
+		pyramidOffset+pyramidSize,0,pyramidSize,1,
+		pyramidOffset+0,pyramidSize*3,0,1
+	};
+	vector<array<size_t, 3>> pyramidTris = {
+		// {3, 1, 4} // reverse, cw
+		// {4, 1, 3}
+	};
+	Object pyramidObj(MyMatrix(5, 4, pyramidVerts), pyramidTris);
 
 	// Basic SDL: https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
 	// Fast pixel drawing: https://stackoverflow.com/questions/33304351/
@@ -53,8 +82,8 @@ int main() {
 		return 1;
 	}
 
-	Renderer myrenderer(renderer);
 	vector<reference_wrapper<Object>> objs{cubeObj}; // Should this store pointers/references?
+	Renderer myrenderer(renderer);
 
 	SDL_Event event;
 	Uint32 fpsTimeNow = SDL_GetTicks();
@@ -89,8 +118,6 @@ int main() {
 			fpsFrameCount = 0;
 			fpsLastPrintTime = fpsCurrentTime;
 		}
-
-		// break;
 
 	}
 

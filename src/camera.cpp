@@ -1,7 +1,7 @@
 #include "camera.h"
 
 Camera::Camera() :
-	mCameraEye(MyVector(std::vector<double>{2, 3, 3})),
+	mCameraEye(MyVector(std::vector<double>{1, 2, 2})),
 	mCameraAt(MyVector(std::vector<double>{0, 0, 0})),
 	mCameraUp(MyVector(std::vector<double>{0, 1, 0})),
 	mProjectionMatrix()
@@ -10,10 +10,12 @@ Camera::Camera() :
 }
 
 void Camera::setProjectionMatrix() {
-	MyVector camAxisZ = mCameraAt.add(mCameraEye.scalar(-1)).normalize(); // TODO not all these normalizes may be necessary
-	MyVector camAxisX = mCameraUp.cross(camAxisZ).normalize();
-	MyVector camAxisY = camAxisZ.cross(camAxisX).normalize();
-
+	MyVector camAxisZ(mCameraEye);
+	camAxisZ.scalar(-1).add(mCameraAt).normalize();
+	MyVector camAxisX(mCameraUp);
+	camAxisX.cross(camAxisZ).normalize();
+	MyVector camAxisY(camAxisZ);
+	camAxisY.cross(camAxisX).scalar(-1).normalize();
 	// cout << "camAxisZ=" << camAxisZ << endl;
 	// cout << "camAxisX=" << camAxisX << endl;
 	// cout << "camAxisY=" << camAxisY << endl;

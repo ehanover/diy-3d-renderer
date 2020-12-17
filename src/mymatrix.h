@@ -24,9 +24,9 @@ public:
 	const std::vector<double>& data() const;
 
 	// void setData(std::vector<double> data);
-	MyMatrix add(const MyMatrix& o);
-	MyMatrix multiply(double o);
-	MyMatrix multiply(const MyMatrix& o);
+	MyMatrix& add(const MyMatrix& o);
+	MyMatrix& multiply(double o);
+	MyMatrix& multiply(const MyMatrix& o);
 
 private:
 	size_t mRows;
@@ -35,4 +35,4 @@ private:
 
 };
 
-std::ostream& operator<<(std::ostream& out, const MyMatrix& MyMatrix);
+std::ostream& operator<<(std::ostream& out, const MyMatrix& m);

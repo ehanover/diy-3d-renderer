@@ -16,12 +16,12 @@ public:
 	size_t size() const;
 	const std::vector<double>& data() const;
 	double magnitude() const;
+	double dot(const MyVector& rhs) const;
 
-	MyVector add(const MyVector& rhs);
-	MyVector scalar(const double& rhs);
-	double dot(const MyVector& rhs);
-	MyVector cross(const MyVector& rhs);
-	MyVector normalize();
+	MyVector& add(const MyVector& rhs);
+	MyVector& scalar(const double& rhs);
+	MyVector& cross(const MyVector& rhs);
+	MyVector& normalize();
 
 private:
 	size_t mSize;
@@ -30,4 +30,4 @@ private:
 
 };
 
-std::ostream& operator<<(std::ostream& out, const MyVector& MyVector);
+std::ostream& operator<<(std::ostream& out, const MyVector& v);

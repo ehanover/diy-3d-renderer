@@ -20,7 +20,10 @@ private:
 	void drawDebugVerts(const std::vector<std::reference_wrapper<Object>>& objs);
 
 	void fakeGeometryShader(const std::vector<std::reference_wrapper<Object>>& objs);
-	void fakeFragmentShader(const std::vector<std::reference_wrapper<Object>>& objs);
+
+	std::array<double, 2> getVertFromMat(const MyMatrix& m, size_t row);
+	double edgeFunction(const std::array<double, 2>& a, const std::array<double, 2>& b, const std::array<double, 2>& c);
+	void fakeFragmentShader();
 
 	SDL_Renderer* mRenderer;
 	int mTextureSizeX;
@@ -34,7 +37,8 @@ private:
 	double mPerspectiveDist;
 	MyMatrix mPerspectiveMat;
 
-	MyMatrix mVerts;
+	// MyMatrix mVerts;
+	std::vector<Object> mObjs;
 	std::vector<unsigned char> mPixels;
 
 };
