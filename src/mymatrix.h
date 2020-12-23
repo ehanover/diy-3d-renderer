@@ -12,21 +12,18 @@ public:
 	MyMatrix(size_t r, size_t c, std::vector<double> d);
 	MyMatrix(const MyMatrix& o);
 
-	// Calculate and return a reference to the specified element.
 	const double& elem(size_t i) const;
 	const double& elem(size_t row, size_t column) const;
 
-	// Resizes this matrix to have the specified size.
-	// void resize(size_t row, size_t column);
-	
 	size_t rows() const;
 	size_t cols() const;
 	const std::vector<double>& data() const;
 
-	// void setData(std::vector<double> data);
 	MyMatrix& add(const MyMatrix& o);
 	MyMatrix& multiply(double o);
 	MyMatrix& multiply(const MyMatrix& o);
+	MyMatrix& invert();
+	MyMatrix& transpose();
 
 private:
 	size_t mRows;

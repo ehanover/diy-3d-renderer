@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mymatrix.h"
 #include <cstddef>
 #include <iostream>
 #include <vector>
@@ -22,6 +23,7 @@ public:
 	MyVector& scalar(const double& rhs);
 	MyVector& cross(const MyVector& rhs);
 	MyVector& normalize();
+	MyVector& multiplyByMatrix(const MyMatrix& rhs);
 
 private:
 	size_t mSize;

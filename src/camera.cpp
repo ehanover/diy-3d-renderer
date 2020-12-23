@@ -29,13 +29,17 @@ void Camera::setProjectionMatrix() {
 	mProjectionMatrix = MyMatrix(4, 4, projectionVec);
 }
 
-MyMatrix Camera::projectionMatrix() const {
-	return mProjectionMatrix;
-}
-
 void Camera::moveCamera(MyVector newEye, MyVector newAt, MyVector newUp) {
 	mCameraEye = newEye;
 	mCameraAt = newAt;
 	mCameraUp = newUp;
 	setProjectionMatrix();
+}
+
+MyVector Camera::cameraEye() const {
+	return mCameraEye;
+}
+
+MyMatrix Camera::projectionMatrix() const {
+	return mProjectionMatrix;
 }

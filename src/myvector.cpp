@@ -90,6 +90,33 @@ MyVector& MyVector::normalize() {
 	return scalar(1/m);
 }
 
+MyVector& MyVector::multiplyByMatrix(const MyMatrix& rhs) {
+	// https://www.scratchapixel.com/code.php?id=22&origin=/lessons/mathematics-physics-for-computer-graphics/geometry
+	
+	if(rhs.rows() == rhs.cols() && size() == 3) {
+		// For vectors, 3 components
+		double a = elem(0)*rhs.elem(0,0) + elem(1)*rhs.elem(1,0) + elem(2)*rhs.elem(2,0); // + rhs.elem(3,0);
+		double b = elem(0)*rhs.elem(0,1) + elem(1)*rhs.elem(1,1) + elem(2)*rhs.elem(2,1); // + rhs.elem(3,1);
+		double c = elem(0)*rhs.elem(0,2) + elem(1)*rhs.elem(1,2) + elem(2)*rhs.elem(2,2); // + rhs.elem(3,2);
+		mData[0] = a;
+		mData[1] = b;
+		mData[2] = c;
+	} else if (rhs.rows() == 4 && rhs.cols() == 4 && size() == 4) {
+		// For points, 3 coordinates + w component = 4 components
+		double a = elem(0)*rhs.elem(0,0) + elem(1)*rhs.elem(1,0) + elem(2)*rhs.elem(2,0) + elem(3)*rhs.elem(3,0);
+		double b = elem(0)*rhs.elem(0,1) + elem(1)*rhs.elem(1,1) + elem(2)*rhs.elem(2,1) + elem(3)*rhs.elem(3,1);
+		double c = elem(0)*rhs.elem(0,2) + elem(1)*rhs.elem(1,2) + elem(2)*rhs.elem(2,2) + elem(3)*rhs.elem(3,2);
+		double w = elem(0)*rhs.elem(0,3) + elem(1)*rhs.elem(1,3) + elem(2)*rhs.elem(2,3) + elem(3)*rhs.elem(3,3);
+		mData[0] = a;
+		mData[1] = b;
+		mData[2] = c;
+		mData[3] = w;
+	} else {
+		std::cout << "Error: tried multiplying a vector with a matrix of wrong size, skipping" << std::endl;
+	}
+	return *this;
+}
+
 std::ostream& operator<<(std::ostream& out, const MyVector& v) {
 	out.precision(3);
 	for(size_t i=0; i<v.size(); i++) {

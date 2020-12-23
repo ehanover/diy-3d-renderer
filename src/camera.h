@@ -10,6 +10,8 @@ public:
 
 	void moveCamera(MyVector newEye, MyVector newAt, MyVector newUp);
 
+	MyVector cameraEye() const;
+
 	MyMatrix projectionMatrix() const;
 
 private:
