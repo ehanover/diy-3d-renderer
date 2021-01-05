@@ -1,7 +1,5 @@
 #include "myvector.h"
 #include <cmath>
-#include <cstddef>
-#include <vector>
 
 MyVector::MyVector(std::vector<double> d) :
 	mSize(d.size()), mData(std::vector<double>(d)) {

@@ -1,6 +1,4 @@
 #include "object.h"
-#include <array>
-#include <vector>
 
 Object::Object(std::vector<MyVector> vs, std::vector<std::array<size_t, 3>> ts) :
 	mPosition(MyVector(std::vector<double>{0,0,0})),

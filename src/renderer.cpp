@@ -1,11 +1,7 @@
 #include "renderer.h"
-#include "mymatrix.h"
-#include "object.h"
-#include <SDL2/SDL.h>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <vector>
 
 Renderer::Renderer(SDL_Renderer* renderer) :
 	mRenderer(renderer),

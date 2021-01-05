@@ -1,7 +1,4 @@
 #include "mymatrix.h"
-#include <cstddef>
-#include <iostream>
-#include <vector>
 
 MyMatrix::MyMatrix() :
 	mRows(0), mCols(0), mData() {

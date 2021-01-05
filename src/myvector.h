@@ -28,7 +28,6 @@ public:
 
 private:
 	size_t mSize;
-	// std::vector<double>* mData;
 	std::vector<double> mData;
 
 };

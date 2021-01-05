@@ -2,6 +2,7 @@
 
 #include "camera.h"
 #include "light.h"
+#include "myvector.h"
 #include "mymatrix.h"
 #include "object.h"
 #include <SDL2/SDL.h>
