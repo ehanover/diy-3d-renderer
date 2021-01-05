@@ -1,6 +1,7 @@
 #pragma once
 
 #include "camera.h"
+#include "light.h"
 #include "mymatrix.h"
 #include "object.h"
 #include <SDL2/SDL.h>
@@ -13,7 +14,7 @@ class Renderer {
 public:
 	Renderer(SDL_Renderer* renderer);
 
-	void render(const std::vector<std::reference_wrapper<Object>>& objs);
+	void render(const std::vector<std::reference_wrapper<Object>>& objs, const Light& light);
 
 private:
 
@@ -43,9 +44,9 @@ private:
 	Fragment shader:
 	Generates a color for every pixel, using steps like rasterization.
 	*/
-	void fakeFragmentShader();
-	std::array<double, 2> getCoordFromVert(const MyVector& v);
-	double edgeFunction(const std::array<double, 2>& a, const std::array<double, 2>& b, const std::array<double, 2>& c);
+	void fakeFragmentShader(const Light& light);
+	std::vector<double> shiftVertOrigin(const MyVector& v);
+	double edgeFunction(const MyVector& a, const MyVector& b, const MyVector& c);
 	double facingRatio(const MyVector& norm);
 
 	SDL_Renderer* mRenderer;
@@ -57,13 +58,14 @@ private:
 
 	// MyMatrix mTransformationMat;
 	// MyMatrix mProjectionMat;
-	double mPerspectiveDist;
 	MyMatrix mPerspectiveMat;
 
-	std::vector<MyVector> mVertsRender;
+	std::vector<MyVector> mVertsWorldRender;
+	std::vector<MyVector> mVertsScreenRender;
 	std::vector<std::array<size_t, 3>> mTrisRender;
 	std::vector<MyVector> mNormsRender;
-	// std::vector<int> mColorsRender;
-	std::vector<unsigned char> mPixels;
+	// std::vector<std::array<uint8_t, 3>> mColorsRender; // The alpha component is assumed to be 255 always
+
+	std::vector<unsigned char> mPixels; // should convert to to uint8_t
 
 };

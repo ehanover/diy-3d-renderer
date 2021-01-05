@@ -24,6 +24,7 @@ public:
 	MyVector& cross(const MyVector& rhs);
 	MyVector& normalize();
 	MyVector& multiplyByMatrix(const MyMatrix& rhs);
+	MyVector& dropW();
 
 private:
 	size_t mSize;

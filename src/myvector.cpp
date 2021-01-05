@@ -86,6 +86,7 @@ MyVector& MyVector::cross(const MyVector& rhs) {
 }
 
 MyVector& MyVector::normalize() {
+	// I could to the Quake fast inverse square root trick here
 	double m = magnitude();
 	return scalar(1/m);
 }
@@ -114,6 +115,19 @@ MyVector& MyVector::multiplyByMatrix(const MyMatrix& rhs) {
 	} else {
 		std::cout << "Error: tried multiplying a vector with a matrix of wrong size, skipping" << std::endl;
 	}
+	return *this;
+}
+
+MyVector& MyVector::dropW() {
+	if(mSize != 4) {
+		std::cout << "Error: tried dropping w component on a vector of size != 3, skipping" << std::endl;
+		return *this;
+	}
+	if(mData[3] > 1.001 || mData[3] < 0.999) {
+		std::cout << "Warning: tried dropping w component on a vector with w != 1, dropping anyway (w=" << mData[3] << ")" << std::endl;
+	}
+	mSize = 3;
+	mData.erase(mData.begin() + 3);
 	return *this;
 }
 

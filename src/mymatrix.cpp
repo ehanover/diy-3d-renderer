@@ -78,6 +78,7 @@ MyMatrix& MyMatrix::multiply(const MyMatrix& o) {
 
 MyMatrix& MyMatrix::invert() {
 	// https://www.scratchapixel.com/code.php?id=22&origin=/lessons/mathematics-physics-for-computer-graphics/geometry
+	// Alternative: https://www.euclideanspace.com/maths/algebra/matrix/functions/inverse/fourD/index.htm
 
 	// To test:
 	// https://www.symbolab.com/solver/matrix-inverse-calculator/inverse%20%5Cbegin%7Bpmatrix%7D0%262%268%266%5C%5C%203%267%261%260%5C%5C%200%260%261%262%5C%5C%200%261%260%261%5Cend%7Bpmatrix%7D

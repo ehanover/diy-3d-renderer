@@ -15,13 +15,13 @@ Renderer::Renderer(SDL_Renderer* renderer) :
 
 	mCamera(),
 
-	// mTransformationMat(),
 	// mProjectionMat(),
-	mPerspectiveDist(1.0),
 	mPerspectiveMat(),
 
-	mVertsRender(),
+	mVertsWorldRender(),
+	mVertsScreenRender(),
 	mTrisRender(),
+	// mColorsRender(),
 	mPixels()
 {
 	SDL_GetRendererOutputSize(mRenderer, &mTextureSizeX, &mTextureSizeY);
@@ -35,27 +35,50 @@ Renderer::Renderer(SDL_Renderer* renderer) :
 	mPixels = std::vector<unsigned char>(mTextureSizeX * mTextureSizeY * 4);
 
 	// Perspective
+	double zNear = 1; // TODO I don't know where these distances are measured from
+	double zFar = -10;
+
+	// https://www.techspot.com/article/1888-how-to-3d-rendering-rasterization-ray-tracing/
+	// std::vector<double> perspectiveVec{
+	// 	(double)mTextureSizeX, 0, 0, 0, // assumes fov angles are both 90
+	// 	0, (double)mTextureSizeY, 0, 0,
+	// 	0, 0, (zFar)/(zFar-zNear), 1,
+	// 	0, 0, (-zFar*zNear)/(zFar-zNear), 0
+	// };
+
+	// https://www.euclideanspace.com/threed/rendering/opengl/index.htm
 	std::vector<double> perspectiveVec{
 		(double)mTextureSizeX, 0, 0, 0,
 		0, (double)mTextureSizeY, 0, 0,
-		0, 0, 1, (1/mPerspectiveDist),
-		0, 0, 0, 0
+		0, 0, (zFar+zNear)/(zFar-zNear), 1, // This might be -1 instead of 1
+		0, 0, (2.0*zFar*zNear)/(zFar-zNear), 0
 	};
+
+	// double perspectiveDist = 1.0;
+	// std::vector<double> perspectiveVec{
+	// 	(double)mTextureSizeX, 0, 0, 0,
+	// 	0, (double)mTextureSizeY, 0, 0,
+	// 	0, 0, 1, (1/perspectiveDist),
+	// 	0, 0, 0, 0
+	// };
+
 	mPerspectiveMat = MyMatrix(4, 4, perspectiveVec);
 }
 
-void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs) {
+void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, const Light& light) {
 	std::fill(mPixels.begin(), mPixels.end(), 0);
-	mVertsRender.clear();
+	mVertsWorldRender.clear();
+	mVertsScreenRender.clear();
 	mTrisRender.clear();
 	mNormsRender.clear();
 	// mColorsRender.clear();
 
 	fakeVertexShader(objs); // The vertex shader takes in objs and breaks them down to verts+tris+norms+etc stored in member vars
+							// Maybe this should instead return lists of verts+norms+etc that utilize counterclockwise winding order so tri storage can be eliminated
 	fakeGeometryShader();
-	fakeFragmentShader();
+	fakeFragmentShader(light);
 
-	drawDebugVerts();
+	// drawDebugVerts();
 
 	 SDL_UpdateTexture
 		(
@@ -65,15 +88,16 @@ void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs) {
 		mTextureSizeX * 4
 		);
 	SDL_RenderCopy(mRenderer, mTexture, NULL, NULL);
+	// std::cout << "done with draw" << std::endl;
 }
 
 void Renderer::drawDebugVerts() {
-	for(size_t i=0; i<mVertsRender.size(); i++) {
+	for(size_t i=0; i<mVertsScreenRender.size(); i++) {
 		// Assuming these vectors' w component is 1
-		MyVector vert = mVertsRender.at(i);
+		MyVector vert = mVertsScreenRender.at(i);
+		// std::cout << "drawing debug vert " << vert << std::endl;
 		int x = (int) vert.elem(0) + (mTextureSizeX/2);
 		int y = (int) vert.elem(1) + (mTextureSizeY/2);
-		// std::cout << "drawing vert at x=" << x << ", y=" << y << std::endl;
 
 		for(int s=0; s<3; s++) {
 			mPixels[(y*mTextureSizeY*4) + ((x+s)*4) + 1] = 250;
@@ -84,38 +108,38 @@ void Renderer::drawDebugVerts() {
 
 void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>>& objs) {
 	for(size_t i=0; i<objs.size(); i++) {
-		Object obj = objs.at(i).get();
+		Object& obj = objs.at(i).get();
 		std::vector<MyVector> objVerts = obj.verts();
 		std::vector<std::array<size_t, 3>> objTris = obj.tris();
 		std::vector<MyVector> objNorms = obj.norms();
 
 		// Apply transformation matrix
-		// Y rotation
 		double rotY = obj.rotation().elem(1);
-		std::vector<double> rotYVec{
+		std::vector<double> rotYVec{ // Y rotation
 			cos(rotY), 0, -sin(rotY), 0,
 			0, 1, 0, 0,
 			sin(rotY), 0, cos(rotY), 0,
 			0, 0, 0, 1
 		};
-		MyMatrix transMat = MyMatrix(4, 4, rotYVec);
-		// std::vector<double> rotYVec{ // (X rotation)
+		// std::vector<double> rotYVec{ // X rotation
 		// 	1, 0, 0, 0,
 		// 	0, cos(rotY), -sin(rotY), 0,
 		// 	0, sin(rotY), cos(rotY), 0,
 		// 	0, 0, 0, 1
 		// };
+		MyMatrix transMat = MyMatrix(4, 4, rotYVec);
 		// Multiply all transformations together before looping over object verts
 
 		for(size_t j=0; j<objVerts.size(); j++) {
 			MyVector objVert = objVerts.at(j);
 
 			objVert.multiplyByMatrix(transMat);
-			objVert.multiplyByMatrix(mCamera.projectionMatrix()); // here
+			mVertsWorldRender.push_back(objVert);
+			
+			objVert.multiplyByMatrix(mCamera.projectionMatrix());
 			objVert.multiplyByMatrix(mPerspectiveMat);
 			objVert.scalar(1.0/objVert.elem(3)); // Homogenize
-
-			mVertsRender.push_back(objVert);
+			mVertsScreenRender.push_back(objVert);
 		}
 
 		MyMatrix transMatNormals(transMat); // Used to transform the normal vectors along with the vert transformations
@@ -123,7 +147,8 @@ void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>
 		transMatNormals.transpose();
 
 		for(size_t j=0; j<objTris.size(); j++) {
-			mTrisRender.push_back(objTris.at(j));
+			std::array<size_t, 3>& objTri = objTris.at(j);
+			mTrisRender.push_back(objTri);
 
 			// https://www.scratchapixel.com/lessons/3d-basic-rendering/transforming-objects-using-matrices
 			// http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/
@@ -139,57 +164,90 @@ void Renderer::fakeGeometryShader() {
 	// Nothing will ever happen here, probably
 }
 
-std::array<double, 2> Renderer::getCoordFromVert(const MyVector& v) {
-	// double w = m.elem(row, 3);
-	double w = 1; // TODO is this assumption always safe?
-	return {(v.elem(0)/w) + (mTextureSizeX/2), (v.elem(1)/w) + (mTextureSizeY/2)};
+std::vector<double> Renderer::shiftVertOrigin(const MyVector& v) {
+	return {v.elem(0) + (mTextureSizeX/2), v.elem(1) + (mTextureSizeY/2), v.elem(2)};
 }
 
-double Renderer::edgeFunction(const std::array<double, 2>& a, const std::array<double, 2>& b, const std::array<double, 2>& c) {
+double Renderer::edgeFunction(const MyVector& a, const MyVector& b, const MyVector& c) {
 	// https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage
-	return (c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0]);
-	// return (a[0] - b[0]) * (c[1] - a[1]) - (a[1] - b[1]) * (c[0] - a[0]); // Supposed to fix rasterizing if vertices declared clockwise
+	// return ( (c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0]) );
+	return ( (c.elem(0) - a.elem(0)) * (b.elem(1) - a.elem(1)) - (c.elem(1) - a.elem(1)) * (b.elem(0) - a.elem(0)) );
+
+	// return ( (a[0] - b[0]) * (c[1] - a[1]) - (a[1] - b[1]) * (c[0] - a[0]) ); // Supposed to fix rasterizing if vertices declared clockwise
 }
 
 double Renderer::facingRatio(const MyVector& norm) {
 	// https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/shading-normals
-	return norm.dot(mCamera.cameraEye());
+	return norm.dot(mCamera.cameraEye()); // This might also depend on cameraAt variable, but if cameraAt is all zero then it doesn't matter
 }
 
-void Renderer::fakeFragmentShader() {
-	// Calculates pixel values from verts+tris+norms by rasterizing
+void Renderer::fakeFragmentShader(const Light& light) {
+	// Calculates pixel colors from verts+tris+norms by rasterizing
 	// https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage
 	
 	for(size_t i=0; i<mTrisRender.size(); i++) {
 
-		// Assuming mTrisRender and mNormsRender have the same size
+		// Every tri should have a corresponding norm
 		std::array<size_t, 3>& tri = mTrisRender.at(i);
 		MyVector& norm = mNormsRender.at(i);
 		double ratio = facingRatio(norm);
+
 		if(ratio >= 0) {
 			continue;
 		}
-		// Assuming these vectors' w component is 1
-		std::array<double, 2> triVert1 = getCoordFromVert(mVertsRender.at(tri[0]));
-		std::array<double, 2> triVert2 = getCoordFromVert(mVertsRender.at(tri[1]));
-		std::array<double, 2> triVert3 = getCoordFromVert(mVertsRender.at(tri[2]));
 
-		std::array<double, 3> triXs = {triVert1[0], triVert2[0], triVert3[0]};
-		std::array<double, 3> triYs = {triVert1[1], triVert2[1], triVert3[1]};
+		MyVector triVertScreen1 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[0]))); // 3D
+		MyVector triVertScreen2 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[1])));
+		MyVector triVertScreen3 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[2])));
+
+		std::array<double, 3> triXs = {triVertScreen1.elem(0), triVertScreen2.elem(0), triVertScreen3.elem(0)};
+		std::array<double, 3> triYs = {triVertScreen1.elem(1), triVertScreen2.elem(1), triVertScreen3.elem(1)};
 		std::pair<double*, double*> triXsBounds = std::minmax_element(triXs.begin(), triXs.end());
 		std::pair<double*, double*> triYsBounds = std::minmax_element(triYs.begin(), triYs.end());
+
+		double area = std::abs(edgeFunction(triVertScreen1, triVertScreen2, triVertScreen3)); // Why is this sometimes negative?
+
 		for(int y=(int)*(triYsBounds.first); y<(int)*(triYsBounds.second); y++) {
 			for(int x=(int)*(triXsBounds.first); x<(int)*(triXsBounds.second); x++) {
 
-				std::array<double, 2> pixVert = {(double)x, (double)y};
+				MyVector pixVert = MyVector({(double)x, (double)y, 0});
+				MyVector triVertWorld1 = MyVector(mVertsWorldRender.at(tri[0])); // 4D
+				MyVector triVertWorld2 = MyVector(mVertsWorldRender.at(tri[1]));
+				MyVector triVertWorld3 = MyVector(mVertsWorldRender.at(tri[2]));
 
-				double w1 = -edgeFunction(triVert2, triVert3, pixVert); // These aren't supposed to be multiplied by -1
-				double w2 = -edgeFunction(triVert3, triVert1, pixVert);
-				double w3 = -edgeFunction(triVert1, triVert2, pixVert);
-				
-				int arrayOffset = (y*mTextureSizeX*4) + (x*4);
+				double w1 = edgeFunction(triVertScreen2, triVertScreen3, pixVert);
+				double w2 = edgeFunction(triVertScreen3, triVertScreen1, pixVert);
+				double w3 = edgeFunction(triVertScreen1, triVertScreen2, pixVert);
+
 				if(w1 >= 0 && w2 >= 0 && w3 >= 0) {
-					mPixels[arrayOffset + 0] = 250;
+					w1 /= area;
+					w2 /= area;
+					w3 /= area;
+
+					triVertWorld1.scalar(w1);
+					triVertWorld2.scalar(w2);
+					triVertWorld3.scalar(w3);
+					MyVector pixVertWorldInterp = MyVector(triVertWorld1);
+					pixVertWorldInterp.add(triVertWorld2);
+					pixVertWorldInterp.add(triVertWorld3);
+					// pixVertWorldInterp.scalar(1/pixVertWorldInterp.elem(3));
+					pixVertWorldInterp.dropW();
+					pixVertWorldInterp.normalize();
+
+					MyVector pixToLight = MyVector(pixVertWorldInterp);
+					pixToLight.scalar(-1);
+					pixToLight.add(light.position());
+					pixToLight.normalize();
+
+					double ambient = 0.1;
+					double diffuse = std::max(0.0, -pixToLight.dot(norm)); // Eliminate negative values (the dot product shouldn't be negative)
+					double light = std::min(1.0, ambient + diffuse);
+
+					int arrayOffset = (y*mTextureSizeX*4) + (x*4);
+					mPixels[arrayOffset + 0] = 255 * light;
+					// mPixels[arrayOffset + 0] = 
+					// mPixels[arrayOffset + 1] = 
+					// mPixels[arrayOffset + 2] = 
 					mPixels[arrayOffset + 3] = SDL_ALPHA_OPAQUE;
 				}
 

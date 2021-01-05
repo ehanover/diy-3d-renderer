@@ -1,3 +1,4 @@
+#include "light.h"
 #include "mymatrix.h"
 #include "myvector.h"
 #include "renderer.h"
@@ -10,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#define SIZE 600
+#define SIZE 450
 
 using namespace std;
 
@@ -19,15 +20,12 @@ Object generatePyramidObject();
 
 int main() {
 
-	Object cubeObj = generateCubeObject();
-	// Object pyramidObj = generatePyramidObject();
-
 	// Basic SDL: https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
 	// Fast pixel drawing: https://stackoverflow.com/questions/33304351/
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 		cout << "SDL_Init Error: " << SDL_GetError() << endl;
 	}
-	SDL_Window* window = SDL_CreateWindow("My Window", 
+	SDL_Window* window = SDL_CreateWindow("diy-opengl", 
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
 		SIZE, SIZE, SDL_WINDOW_SHOWN);
 	if(window == nullptr){
@@ -43,7 +41,11 @@ int main() {
 		return 1;
 	}
 
-	vector<reference_wrapper<Object>> objs{cubeObj}; // Should this store pointers/references?
+	// Object cubeObj = generateCubeObject();
+	Object pyramidObj = generatePyramidObject();
+
+	vector<reference_wrapper<Object>> objs{pyramidObj}; // Should this store pointers/references?
+	Light mylight(MyVector({2,0,2}));
 	Renderer myrenderer(renderer);
 
 	SDL_Event event;
@@ -63,12 +65,11 @@ int main() {
 		double deltaTime = (fpsTimeNow - fpsLastFrameTime);// / 1000.0;
 		fpsLastFrameTime = fpsTimeNow;
 
-		cubeObj.setRotation( cubeObj.rotation().add(MyVector({0, 0.0005*deltaTime, 0})) );
+		// cubeObj.setRotation( cubeObj.rotation().add(MyVector({0, 0.0008*deltaTime, 0})) );
+		pyramidObj.setRotation( pyramidObj.rotation().add(MyVector({0, 0.0006*deltaTime, 0})) );
 
 		// Draw
-		SDL_SetRenderDrawColor(renderer, 0x30, 0x40, 0x50, 0xFF);
-		SDL_RenderClear(renderer); // Is this necessary?
-		myrenderer.render(objs);
+		myrenderer.render(objs, mylight);
 		SDL_RenderPresent(renderer);
 
 		// Calculate and print FPS
@@ -90,44 +91,9 @@ int main() {
 }
 
 Object generateCubeObject() {
+	double cubeSize = 0.45;
+	
 	// http://paulbourke.net/geometry/polygonise/
-	double cubeSize = 0.5;
-	/*vector<double> cubeVerts = {
-		-cubeSize,-cubeSize,-cubeSize,1,
-		cubeSize,-cubeSize,-cubeSize,1,
-		cubeSize,-cubeSize,cubeSize,1,
-		-cubeSize,-cubeSize,cubeSize,1,
-		-cubeSize,cubeSize,-cubeSize,1,
-		cubeSize,cubeSize,-cubeSize,1,
-		cubeSize,cubeSize,cubeSize,1,
-		-cubeSize,cubeSize,cubeSize,1
-	};
-	vector<array<size_t, 3>> cubeTris = {
-		{0, 3, 2},
-		{1, 0, 2},
-		{5, 6, 1},
-		{6, 2, 1},
-		{4, 7, 6},
-		{5, 4, 6},
-		{7, 4, 0},
-		{3, 7, 0},
-		{4, 5, 0},
-		{5, 1, 0},
-		{6, 7, 3},
-		// {6, 2, 3} // reverse, cw
-		{2, 6, 3}
-	};*/
-
-	// vector<double> cubeVerts = {
-	// 	0,0,0,1,
-	// 	cubeSize,0,0,1,
-	// 	cubeSize,cubeSize,0,1,
-	// 	0,cubeSize,0,1,
-	// 	0,cubeSize,cubeSize,1,
-	// 	cubeSize,cubeSize,cubeSize,1,
-	// 	cubeSize,0,cubeSize,1,
-	// 	0,0,cubeSize,1,
-	// };
 	// vector<array<size_t, 3>> cubeTris = { // clockwise winding
 	// 	{0, 2, 1}, //face front
 	// 	{0, 3, 2},
@@ -188,17 +154,21 @@ Object generateCubeObject() {
 
 Object generatePyramidObject() {
 	double pyramidSize = 0.24;
-	double pyramidOffset = 0.7;
+	double pyramidOffset = 0.7; // right translation
 	vector<MyVector> pyramidVerts = {
 		MyVector(vector<double>{pyramidOffset-pyramidSize,0,pyramidSize,1}),
-		MyVector(vector<double>{pyramidOffset-pyramidSize,0,-pyramidSize,1}),
-		MyVector(vector<double>{pyramidOffset+pyramidSize,0,-pyramidSize,1}),
 		MyVector(vector<double>{pyramidOffset+pyramidSize,0,pyramidSize,1}),
-		MyVector(vector<double>{pyramidOffset+0,pyramidSize*3,0,1})
+		MyVector(vector<double>{pyramidOffset+pyramidSize,0,-pyramidSize,1}),
+		MyVector(vector<double>{pyramidOffset-pyramidSize,0,-pyramidSize,1}),
+		MyVector(vector<double>{pyramidOffset,pyramidSize*2,0,1})
 	};
 	vector<array<size_t, 3>> pyramidTris = {
-		// {3, 1, 4} // reverse, cw
-		// {4, 1, 3}
+		{0, 1, 4},
+		{1, 2, 4},
+		{2, 3, 4},
+		{3, 0, 4},
+		{2, 1, 0},
+		{0, 3, 2}
 	};
 	return Object(pyramidVerts, pyramidTris);
 }
