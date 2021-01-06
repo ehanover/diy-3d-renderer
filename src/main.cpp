@@ -47,6 +47,8 @@ int main() {
 	// Object cubeObj = generateCubeObject();
 	Object pyramidObj = generatePyramidObject();
 
+	loadedObj.setRotation(MyVector({0, 3.9, 0}));
+
 	vector<reference_wrapper<Object>> objs{loadedObj}; // Should this store pointers/references?
 	Light mylight(MyVector({0,2,2}));
 	Renderer myrenderer(renderer);

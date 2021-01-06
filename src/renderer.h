@@ -49,6 +49,7 @@ private:
 	std::vector<double> shiftVertOrigin(const MyVector& v);
 	double edgeFunction(const MyVector& a, const MyVector& b, const MyVector& c);
 	double facingRatio(const MyVector& norm);
+	uint16_t scaledVertDepth(double dw);
 
 	SDL_Renderer* mRenderer;
 	int mTextureSizeX;
@@ -59,6 +60,8 @@ private:
 
 	// MyMatrix mTransformationMat;
 	// MyMatrix mProjectionMat;
+	double mZNear;
+	double mZFar;
 	MyMatrix mPerspectiveMat;
 
 	std::vector<MyVector> mVertsWorldRender;
@@ -67,6 +70,7 @@ private:
 	std::vector<MyVector> mNormsRender;
 	// std::vector<std::array<uint8_t, 3>> mColorsRender; // The alpha component is assumed to be 255 always
 
-	std::vector<unsigned char> mPixels; // should convert to to uint8_t
+	std::vector<uint8_t> mPixels; // should convert to to uint8_t
+	std::vector<uint16_t> mDepths; // uint16_t is lowest level of recommended precision
 
 };

@@ -12,13 +12,17 @@ Renderer::Renderer(SDL_Renderer* renderer) :
 	mCamera(),
 
 	// mProjectionMat(),
+	mZNear(1.5), // TODO are these distances are measured from the origin?
+	mZFar(-3),
 	mPerspectiveMat(),
 
 	mVertsWorldRender(),
 	mVertsScreenRender(),
 	mTrisRender(),
 	// mColorsRender(),
-	mPixels()
+
+	mPixels(),
+	mDepths()
 {
 	SDL_GetRendererOutputSize(mRenderer, &mTextureSizeX, &mTextureSizeY);
 	mTexture = SDL_CreateTexture
@@ -28,27 +32,26 @@ Renderer::Renderer(SDL_Renderer* renderer) :
 		SDL_TEXTUREACCESS_STREAMING,
 		mTextureSizeX, mTextureSizeY // What is the significance of the texture dimension?
 		);
-	mPixels = std::vector<unsigned char>(mTextureSizeX * mTextureSizeY * 4);
+	mPixels = std::vector<uint8_t>(mTextureSizeX * mTextureSizeY * 4);
+	mDepths = std::vector<uint16_t>(mTextureSizeX * mTextureSizeY);
 
 	// Perspective
-	double zNear = 1; // TODO I don't know where these distances are measured from
-	double zFar = -10;
 
 	// https://www.techspot.com/article/1888-how-to-3d-rendering-rasterization-ray-tracing/
-	// std::vector<double> perspectiveVec{
-	// 	(double)mTextureSizeX, 0, 0, 0, // assumes fov angles are both 90
-	// 	0, (double)mTextureSizeY, 0, 0,
-	// 	0, 0, (zFar)/(zFar-zNear), 1,
-	// 	0, 0, (-zFar*zNear)/(zFar-zNear), 0
-	// };
+	std::vector<double> perspectiveVec{
+		(double)mTextureSizeX, 0, 0, 0, // assumes fov angles are both 90
+		0, (double)mTextureSizeY, 0, 0,
+		0, 0, (mZFar)/(mZFar-mZNear), 1,
+		0, 0, (-mZFar*mZNear)/(mZFar-mZNear), 0
+	};
 
 	// https://www.euclideanspace.com/threed/rendering/opengl/index.htm
-	std::vector<double> perspectiveVec{
-		(double)mTextureSizeX, 0, 0, 0,
-		0, (double)mTextureSizeY, 0, 0,
-		0, 0, (zFar+zNear)/(zFar-zNear), 1, // This might be -1 instead of 1
-		0, 0, (2.0*zFar*zNear)/(zFar-zNear), 0
-	};
+	// std::vector<double> perspectiveVec{
+	// 	(double)mTextureSizeX, 0, 0, 0,
+	// 	0, (double)mTextureSizeY, 0, 0,
+	// 	0, 0, (mZFar+mZNear)/(mZFar-mZNear), 1, // This might be -1 instead of 1
+	// 	0, 0, (2.0*mZFar*mZNear)/(mZFar-mZNear), 0
+	// };
 
 	// double perspectiveDist = 1.0;
 	// std::vector<double> perspectiveVec{
@@ -63,6 +66,7 @@ Renderer::Renderer(SDL_Renderer* renderer) :
 
 void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, const Light& light) {
 	std::fill(mPixels.begin(), mPixels.end(), 0);
+	std::fill(mDepths.begin(), mDepths.end(), (2>>15)-1);
 	mVertsWorldRender.clear();
 	mVertsScreenRender.clear();
 	mTrisRender.clear();
@@ -177,6 +181,15 @@ double Renderer::facingRatio(const MyVector& norm) {
 	return norm.dot(mCamera.cameraEye()); // This might also depend on cameraAt variable, but if cameraAt is all zero then it doesn't matter
 }
 
+uint16_t Renderer::scaledVertDepth(double dw) {
+	// https://en.wikipedia.org/wiki/Z-buffering#Mathematics
+	// double f = (mZFar/(mZFar-mZNear)) + (1/dw)*(-mZFar*mZNear)/(mZFar-mZNear);
+	double f = (-dw + mZNear) / (mZNear + -mZFar); // (my intuition calculation)
+	double r = (uint16_t) (((2<<15)-1) * f);
+	// std::cout << "got z=" << z << ", f=" << f << ", r=" << r << std::endl;
+	return r;
+}
+
 void Renderer::fakeFragmentShader(const Light& light) {
 	// Calculates pixel colors from verts+tris+norms by rasterizing
 	// https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage
@@ -227,6 +240,18 @@ void Renderer::fakeFragmentShader(const Light& light) {
 					pixVertWorldInterp.add(triVertWorld2);
 					pixVertWorldInterp.add(triVertWorld3);
 					// pixVertWorldInterp.scalar(1/pixVertWorldInterp.elem(3));
+
+					double depthWorld = pixVertWorldInterp.elem(2);
+					if(depthWorld < mZFar || depthWorld > mZNear) {
+						continue;
+					}
+					uint16_t depthScaled = scaledVertDepth(depthWorld);
+					size_t depthIndex = (y*mTextureSizeY) + x;
+					if(depthScaled >= mDepths[depthIndex]) {
+						continue;
+					}
+					mDepths[depthIndex] = depthScaled;
+
 					pixVertWorldInterp.dropW();
 					pixVertWorldInterp.normalize();
 
@@ -234,8 +259,7 @@ void Renderer::fakeFragmentShader(const Light& light) {
 					pixToLight.scalar(-1);
 					pixToLight.add(light.position());
 					pixToLight.normalize();
-
-					double ambient = 0.1;
+					double ambient = 0.2;
 					double diffuse = std::max(0.0, pixToLight.dot(norm)); // Eliminate negative values (the dot product shouldn't be negative)
 					double light = std::min(1.0, ambient + diffuse);
 
