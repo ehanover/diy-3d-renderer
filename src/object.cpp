@@ -15,7 +15,10 @@ Object::Object(std::vector<MyVector> vs, std::vector<std::array<size_t, 3>> ts, 
 	mScale(MyVector(std::vector<double>{1,1,1})),
 	mVerts(vs), mTris(ts), mNorms(ns)
 {
-
+	if(mNorms.size() == 0 || mNorms.size() < mTris.size()) {
+		mNorms.clear();
+		calculateNormals();
+	}
 }
 
 Object::Object(const Object& o) :
@@ -74,11 +77,11 @@ void Object::calculateNormals() {
 
 		MyVector a = MyVector(std::vector<double>{triVert2[0] - triVert1[0], triVert2[1] - triVert1[1], triVert2[2] - triVert1[2]});
 		MyVector b = MyVector(std::vector<double>{triVert3[0] - triVert1[0], triVert3[1] - triVert1[1], triVert3[2] - triVert1[2]});
-		// a.cross(b);
-		// a.normalize();
-		// mNorms.push_back(a);
-		b.cross(a);
-		b.normalize();
-		mNorms.push_back(b);
+		a.cross(b);
+		a.normalize();
+		mNorms.push_back(a);
+		// b.cross(a);
+		// b.normalize();
+		// mNorms.push_back(b);
 	}
 }

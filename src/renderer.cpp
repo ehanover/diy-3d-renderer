@@ -180,7 +180,7 @@ double Renderer::facingRatio(const MyVector& norm) {
 void Renderer::fakeFragmentShader(const Light& light) {
 	// Calculates pixel colors from verts+tris+norms by rasterizing
 	// https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage
-	
+
 	for(size_t i=0; i<mTrisRender.size(); i++) {
 
 		// Every tri should have a corresponding norm
@@ -188,7 +188,7 @@ void Renderer::fakeFragmentShader(const Light& light) {
 		MyVector& norm = mNormsRender.at(i);
 		double ratio = facingRatio(norm);
 
-		if(ratio >= 0) {
+		if(ratio <= 0) { // https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/shading-normals
 			continue;
 		}
 
@@ -236,7 +236,7 @@ void Renderer::fakeFragmentShader(const Light& light) {
 					pixToLight.normalize();
 
 					double ambient = 0.1;
-					double diffuse = std::max(0.0, -pixToLight.dot(norm)); // Eliminate negative values (the dot product shouldn't be negative)
+					double diffuse = std::max(0.0, pixToLight.dot(norm)); // Eliminate negative values (the dot product shouldn't be negative)
 					double light = std::min(1.0, ambient + diffuse);
 
 					int arrayOffset = (y*mTextureSizeX*4) + (x*4);

@@ -1,3 +1,4 @@
+#include "fileloader.h"
 #include "light.h"
 #include "mymatrix.h"
 #include "myvector.h"
@@ -11,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#define SIZE 450
+#define SIZE 600
 
 using namespace std;
 
@@ -19,6 +20,8 @@ Object generateCubeObject(); // Should these go in another file? Maybe fileloade
 Object generatePyramidObject();
 
 int main() {
+
+	Object loadedObj = loadStl("models/monkey.stl");
 
 	// Basic SDL: https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
 	// Fast pixel drawing: https://stackoverflow.com/questions/33304351/
@@ -44,8 +47,8 @@ int main() {
 	// Object cubeObj = generateCubeObject();
 	Object pyramidObj = generatePyramidObject();
 
-	vector<reference_wrapper<Object>> objs{pyramidObj}; // Should this store pointers/references?
-	Light mylight(MyVector({2,0,2}));
+	vector<reference_wrapper<Object>> objs{loadedObj}; // Should this store pointers/references?
+	Light mylight(MyVector({0,2,2}));
 	Renderer myrenderer(renderer);
 
 	SDL_Event event;
@@ -66,7 +69,7 @@ int main() {
 		fpsLastFrameTime = fpsTimeNow;
 
 		// cubeObj.setRotation( cubeObj.rotation().add(MyVector({0, 0.0008*deltaTime, 0})) );
-		pyramidObj.setRotation( pyramidObj.rotation().add(MyVector({0, 0.0006*deltaTime, 0})) );
+		loadedObj.setRotation( loadedObj.rotation().add(MyVector({0, 0.0006*deltaTime, 0})) );
 
 		// Draw
 		myrenderer.render(objs, mylight);
@@ -94,20 +97,6 @@ Object generateCubeObject() {
 	double cubeSize = 0.45;
 	
 	// http://paulbourke.net/geometry/polygonise/
-	// vector<array<size_t, 3>> cubeTris = { // clockwise winding
-	// 	{0, 2, 1}, //face front
-	// 	{0, 3, 2},
-	// 	{2, 3, 4}, //face top
-	// 	{2, 4, 5},
-	// 	{1, 2, 5}, //face right
-	// 	{1, 5, 6},
-	// 	{0, 7, 4}, //face left
-	// 	{0, 4, 3},
-	// 	{5, 4, 7}, //face back
-	// 	{5, 7, 6},
-	// 	{0, 6, 7}, //face bottom
-	// 	{0, 1, 6}
-	// };
 	// vector<array<size_t, 3>> cubeTris = { // counter-clockwise winding
 	// 	{2, 0, 1}, //face front
 	// 	{3, 0, 2},
