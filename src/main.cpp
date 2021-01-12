@@ -12,7 +12,9 @@
 #include <string>
 #include <vector>
 
-#define SIZE 600
+#define WINDOW_WIDTH 600
+#define WINDOW_HEIGHT 450
+#define RENDERER_SCALE 0.7
 
 using namespace std;
 
@@ -30,7 +32,8 @@ int main() {
 	}
 	SDL_Window* window = SDL_CreateWindow("diy-opengl", 
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
-		SIZE, SIZE, SDL_WINDOW_SHOWN);
+		WINDOW_WIDTH, WINDOW_HEIGHT, 
+		SDL_WINDOW_SHOWN);
 	if(window == nullptr){
 		cout << "SDL_CreateWindow Error: " << SDL_GetError() << endl;
 		SDL_Quit();
@@ -45,13 +48,11 @@ int main() {
 	}
 
 	// Object cubeObj = generateCubeObject();
-	Object pyramidObj = generatePyramidObject();
-
-	loadedObj.setRotation(MyVector({0, 3.9, 0}));
+	// Object pyramidObj = generatePyramidObject();
 
 	vector<reference_wrapper<Object>> objs{loadedObj}; // Should this store pointers/references?
-	Light mylight(MyVector({0,2,2}));
-	Renderer myrenderer(renderer);
+	Light mylight(MyVector({0,1,4}));
+	Renderer myrenderer(renderer, RENDERER_SCALE);
 
 	SDL_Event event;
 	Uint32 fpsTimeNow = SDL_GetTicks();
@@ -70,7 +71,7 @@ int main() {
 		double deltaTime = (fpsTimeNow - fpsLastFrameTime);// / 1000.0;
 		fpsLastFrameTime = fpsTimeNow;
 
-		// cubeObj.setRotation( cubeObj.rotation().add(MyVector({0, 0.0008*deltaTime, 0})) );
+		// pyramidObj.setRotation( pyramidObj.rotation().add(MyVector({0, 0.0008*deltaTime, 0})) );
 		loadedObj.setRotation( loadedObj.rotation().add(MyVector({0, 0.0006*deltaTime, 0})) );
 
 		// Draw
@@ -145,7 +146,7 @@ Object generateCubeObject() {
 
 Object generatePyramidObject() {
 	double pyramidSize = 0.24;
-	double pyramidOffset = 0.7; // right translation
+	double pyramidOffset = 1.0; // right translation
 	vector<MyVector> pyramidVerts = {
 		MyVector(vector<double>{pyramidOffset-pyramidSize,0,pyramidSize,1}),
 		MyVector(vector<double>{pyramidOffset+pyramidSize,0,pyramidSize,1}),

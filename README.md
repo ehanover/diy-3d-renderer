@@ -16,7 +16,7 @@ make install
 
 **Features I've implemented:** custom matrix and vector classes, some object transformations, projection+perspective projections, camera movement, triangle rasterization, normal creation, backface+frustum culling, STL importing, ambient+diffuse lighting, z-buffering
 
-**Features I want to implement:** canvas upscaling, FPS upper bounding, complete object transformations, texturing, specular lighting (Phong), support for multiple lights, object coloring, general optimization
+**Features I want to implement:** FPS upper bounding, complete object transformations, texturing, specular lighting (Phong), support for multiple lights, object coloring, multithreading (is this doable?), general optimization
 
 **Current problems:** common-edge rasterization holes, unclear standard for individually coloring vertices
 

@@ -13,7 +13,7 @@
 class Renderer {
 
 public:
-	Renderer(SDL_Renderer* renderer);
+	Renderer(SDL_Renderer* renderer, float textureScale);
 
 	void render(const std::vector<std::reference_wrapper<Object>>& objs, const Light& light);
 
@@ -54,6 +54,7 @@ private:
 	SDL_Renderer* mRenderer;
 	int mTextureSizeX;
 	int mTextureSizeY;
+	SDL_Rect mTextureScaledBounds;
 	SDL_Texture* mTexture;
 
 	Camera mCamera;

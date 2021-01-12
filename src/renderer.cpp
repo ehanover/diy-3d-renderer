@@ -3,16 +3,17 @@
 #include <cmath>
 #include <iostream>
 
-Renderer::Renderer(SDL_Renderer* renderer) :
+Renderer::Renderer(SDL_Renderer* renderer, float textureScale) :
 	mRenderer(renderer),
 	mTextureSizeX(0),
 	mTextureSizeY(0),
+	mTextureScaledBounds(),
 	mTexture(),
 
 	mCamera(),
 
 	// mProjectionMat(),
-	mZNear(1.5), // TODO are these distances are measured from the origin?
+	mZNear(1.5),
 	mZFar(-3),
 	mPerspectiveMat(),
 
@@ -25,12 +26,16 @@ Renderer::Renderer(SDL_Renderer* renderer) :
 	mDepths()
 {
 	SDL_GetRendererOutputSize(mRenderer, &mTextureSizeX, &mTextureSizeY);
+	mTextureScaledBounds = {.x=0, .y=0, .w=mTextureSizeX, .h=mTextureSizeY}; // https://gamedev.stackexchange.com/a/102881
+	mTextureSizeX = (int) (mTextureSizeX*textureScale);
+	mTextureSizeY = (int) (mTextureSizeY*textureScale);
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0"); // https://wiki.libsdl.org/SDL_HINT_RENDER_SCALE_QUALITY
 	mTexture = SDL_CreateTexture
 		(
 		mRenderer,
 		SDL_PIXELFORMAT_ARGB8888,
 		SDL_TEXTUREACCESS_STREAMING,
-		mTextureSizeX, mTextureSizeY // What is the significance of the texture dimension?
+		mTextureSizeX, mTextureSizeY
 		);
 	mPixels = std::vector<uint8_t>(mTextureSizeX * mTextureSizeY * 4);
 	mDepths = std::vector<uint16_t>(mTextureSizeX * mTextureSizeY);
@@ -38,9 +43,10 @@ Renderer::Renderer(SDL_Renderer* renderer) :
 	// Perspective
 
 	// https://www.techspot.com/article/1888-how-to-3d-rendering-rasterization-ray-tracing/
+	double worldScale = std::min(mTextureSizeX, mTextureSizeY);
 	std::vector<double> perspectiveVec{
-		(double)mTextureSizeX, 0, 0, 0, // assumes fov angles are both 90
-		0, (double)mTextureSizeY, 0, 0,
+		worldScale, 0, 0, 0, // Makes assumption about FOV angle
+		0, worldScale, 0, 0,
 		0, 0, (mZFar)/(mZFar-mZNear), 1,
 		0, 0, (-mZFar*mZNear)/(mZFar-mZNear), 0
 	};
@@ -77,18 +83,16 @@ void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, c
 							// Maybe this should instead return lists of verts+norms+etc that utilize counterclockwise winding order so tri storage can be eliminated
 	fakeGeometryShader();
 	fakeFragmentShader(light);
-
 	// drawDebugVerts();
 
-	 SDL_UpdateTexture
+	SDL_UpdateTexture
 		(
 		mTexture,
 		NULL,
 		mPixels.data(),
 		mTextureSizeX * 4
 		);
-	SDL_RenderCopy(mRenderer, mTexture, NULL, NULL);
-	// std::cout << "done with draw" << std::endl;
+	SDL_RenderCopy(mRenderer, mTexture, NULL, &mTextureScaledBounds);
 }
 
 void Renderer::drawDebugVerts() {
@@ -96,12 +100,12 @@ void Renderer::drawDebugVerts() {
 		// Assuming these vectors' w component is 1
 		MyVector vert = mVertsScreenRender.at(i);
 		// std::cout << "drawing debug vert " << vert << std::endl;
-		int x = (int) vert.elem(0) + (mTextureSizeX/2);
+		int x = (int) vert.elem(0) + (mTextureSizeX/2); // Centered world coordinates
 		int y = (int) vert.elem(1) + (mTextureSizeY/2);
 
 		for(int s=0; s<3; s++) {
-			mPixels[(y*mTextureSizeY*4) + ((x+s)*4) + 1] = 250;
-			mPixels[(y*mTextureSizeY*4) + ((x+s)*4) + 3] = SDL_ALPHA_OPAQUE;
+			mPixels[(y*mTextureSizeX*4) + ((x+s)*4) + 1] = 250;
+			mPixels[(y*mTextureSizeX*4) + ((x+s)*4) + 3] = SDL_ALPHA_OPAQUE;
 		}
 	}
 }
@@ -182,10 +186,9 @@ double Renderer::facingRatio(const MyVector& norm) {
 }
 
 uint16_t Renderer::scaledVertDepth(double dw) {
-	// https://en.wikipedia.org/wiki/Z-buffering#Mathematics
-	// double f = (mZFar/(mZFar-mZNear)) + (1/dw)*(-mZFar*mZNear)/(mZFar-mZNear);
+	// double f = (mZFar/(mZFar-mZNear)) + (1/dw)*(-mZFar*mZNear)/(mZFar-mZNear); // https://en.wikipedia.org/wiki/Z-buffering#Mathematics
 	double f = (-dw + mZNear) / (mZNear + -mZFar); // (my intuition calculation)
-	double r = (uint16_t) (((2<<15)-1) * f);
+	uint16_t r = (uint16_t) (((2<<15)-1) * f);
 	// std::cout << "got z=" << z << ", f=" << f << ", r=" << r << std::endl;
 	return r;
 }
