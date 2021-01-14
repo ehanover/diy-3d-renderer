@@ -58,9 +58,6 @@ private:
 	SDL_Texture* mTexture;
 
 	Camera mCamera;
-
-	// MyMatrix mTransformationMat;
-	// MyMatrix mProjectionMat;
 	double mZNear;
 	double mZFar;
 	MyMatrix mPerspectiveMat;
@@ -69,9 +66,8 @@ private:
 	std::vector<MyVector> mVertsScreenRender;
 	std::vector<std::array<size_t, 3>> mTrisRender;
 	std::vector<MyVector> mNormsRender;
-	// std::vector<std::array<uint8_t, 3>> mColorsRender; // The alpha component is assumed to be 255 always
 
-	std::vector<uint8_t> mPixels; // should convert to to uint8_t
-	std::vector<uint16_t> mDepths; // uint16_t is lowest level of recommended precision
+	std::vector<uint8_t> mPixels;
+	std::vector<uint16_t> mDepths; // uint16_t is lowest level of recommended precision, according to wikipedia
 
 };

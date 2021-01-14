@@ -4,3 +4,6 @@
 #include <string>
 
 Object loadStl(const std::string& filename);
+
+Object generateCubeObject();
+Object generatePyramidObject();

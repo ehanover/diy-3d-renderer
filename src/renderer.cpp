@@ -11,16 +11,13 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale) :
 	mTexture(),
 
 	mCamera(),
-
-	// mProjectionMat(),
-	mZNear(1.5),
+	mZNear(3),
 	mZFar(-3),
 	mPerspectiveMat(),
 
 	mVertsWorldRender(),
 	mVertsScreenRender(),
 	mTrisRender(),
-	// mColorsRender(),
 
 	mPixels(),
 	mDepths()
@@ -51,22 +48,6 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale) :
 		0, 0, (-mZFar*mZNear)/(mZFar-mZNear), 0
 	};
 
-	// https://www.euclideanspace.com/threed/rendering/opengl/index.htm
-	// std::vector<double> perspectiveVec{
-	// 	(double)mTextureSizeX, 0, 0, 0,
-	// 	0, (double)mTextureSizeY, 0, 0,
-	// 	0, 0, (mZFar+mZNear)/(mZFar-mZNear), 1, // This might be -1 instead of 1
-	// 	0, 0, (2.0*mZFar*mZNear)/(mZFar-mZNear), 0
-	// };
-
-	// double perspectiveDist = 1.0;
-	// std::vector<double> perspectiveVec{
-	// 	(double)mTextureSizeX, 0, 0, 0,
-	// 	0, (double)mTextureSizeY, 0, 0,
-	// 	0, 0, 1, (1/perspectiveDist),
-	// 	0, 0, 0, 0
-	// };
-
 	mPerspectiveMat = MyMatrix(4, 4, perspectiveVec);
 }
 
@@ -77,7 +58,6 @@ void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, c
 	mVertsScreenRender.clear();
 	mTrisRender.clear();
 	mNormsRender.clear();
-	// mColorsRender.clear();
 
 	fakeVertexShader(objs); // The vertex shader takes in objs and breaks them down to verts+tris+norms+etc stored in member vars
 							// Maybe this should instead return lists of verts+norms+etc that utilize counterclockwise winding order so tri storage can be eliminated
@@ -104,13 +84,14 @@ void Renderer::drawDebugVerts() {
 		int y = (int) vert.elem(1) + (mTextureSizeY/2);
 
 		for(int s=0; s<3; s++) {
-			mPixels[(y*mTextureSizeX*4) + ((x+s)*4) + 1] = 250;
+			mPixels[(y*mTextureSizeX*4) + ((x+s)*4) + 2] = 250;
 			mPixels[(y*mTextureSizeX*4) + ((x+s)*4) + 3] = SDL_ALPHA_OPAQUE;
 		}
 	}
 }
 
 void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>>& objs) {
+	size_t triObjOffset = 0;
 	for(size_t i=0; i<objs.size(); i++) {
 		Object& obj = objs.at(i).get();
 		std::vector<MyVector> objVerts = obj.verts();
@@ -152,6 +133,9 @@ void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>
 
 		for(size_t j=0; j<objTris.size(); j++) {
 			std::array<size_t, 3>& objTri = objTris.at(j);
+			objTri[0] += triObjOffset;
+			objTri[1] += triObjOffset;
+			objTri[2] += triObjOffset;
 			mTrisRender.push_back(objTri);
 
 			// https://www.scratchapixel.com/lessons/3d-basic-rendering/transforming-objects-using-matrices
@@ -160,6 +144,7 @@ void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>
 			objNorm.multiplyByMatrix(transMatNormals);
 			mNormsRender.push_back(objNorm);
 		}
+		triObjOffset += objVerts.size();
 	}
 
 }
@@ -262,12 +247,12 @@ void Renderer::fakeFragmentShader(const Light& light) {
 					pixToLight.scalar(-1);
 					pixToLight.add(light.position());
 					pixToLight.normalize();
-					double ambient = 0.2;
+					double ambient = 0.15;
 					double diffuse = std::max(0.0, pixToLight.dot(norm)); // Eliminate negative values (the dot product shouldn't be negative)
 					double light = std::min(1.0, ambient + diffuse);
 
 					int arrayOffset = (y*mTextureSizeX*4) + (x*4);
-					mPixels[arrayOffset + 0] = 255 * light;
+					mPixels[arrayOffset + 1] = 255 * light;
 					// mPixels[arrayOffset + 0] = 
 					// mPixels[arrayOffset + 1] = 
 					// mPixels[arrayOffset + 2] = 

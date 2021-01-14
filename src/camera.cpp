@@ -12,14 +12,14 @@ Camera::Camera() :
 void Camera::setProjectionMatrix() {
 	// MyVector camAxisZ(mCameraEye);
 	// camAxisZ.scalar(-1).add(mCameraAt).normalize();
-	MyVector camAxisZ(mCameraAt);
-	camAxisZ.scalar(-1).add(mCameraEye).normalize();
 	// MyVector camAxisX(mCameraUp);
 	// camAxisX.cross(camAxisZ).normalize();
-	MyVector camAxisX(mCameraUp);
-	camAxisX.cross(camAxisZ).scalar(-1).normalize();
 	// MyVector camAxisY(camAxisZ);
 	// camAxisY.cross(camAxisX).scalar(-1).normalize();
+	MyVector camAxisZ(mCameraAt);
+	camAxisZ.scalar(-1).add(mCameraEye).normalize();
+	MyVector camAxisX(mCameraUp);
+	camAxisX.cross(camAxisZ).scalar(-1).normalize();
 	MyVector camAxisY(camAxisX);
 	camAxisY.cross(camAxisZ).normalize();
 	// std::cout << "camAxisX=" << camAxisX << std::endl;

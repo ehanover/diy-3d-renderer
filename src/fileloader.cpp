@@ -37,6 +37,7 @@ public:
 };
 
 
+/*
 void printSet(unordered_set<MyVector, MyVectorHash, MyVectorEqual>& set) {
 	unordered_set<MyVector>::iterator it;
 	for(it=set.begin(); it!=set.end(); it++) {
@@ -45,6 +46,7 @@ void printSet(unordered_set<MyVector, MyVectorHash, MyVectorEqual>& set) {
 	}
 	cout << endl;
 }
+*/
 
 // /*
 bool isBinarySTL(char* buffer) {
@@ -110,9 +112,7 @@ bool isBinarySTL(char* buffer) {
 // http://www.jgxsoft.com/examples/STL%20Reader/STL%20Reader.html
 Object loadStl(const string& fileName) {
 
-	// int nVertex = 0; // Number of vertices read.
-	// int nFacet = 0;  // Number of facets read.
-	unordered_set<MyVector, MyVectorHash, MyVectorEqual> verts;
+	unordered_set<MyVector, MyVectorHash, MyVectorEqual> vertsSet;
 
 	// Open the file for reading using an input fstream.
 	ifstream ifs(fileName, ifstream::binary);
@@ -144,9 +144,9 @@ Object loadStl(const string& fileName) {
 	bufptr += 80; // Skip past the header.
 
 	uint32_t numTris = *(uint32_t*) (bufptr);
-	verts.reserve(numTris*3);
-	bufptr += 4; // Skip past the number of triangles.
 	// cout << "numTris=" << numTris << endl;
+	vertsSet.reserve(numTris*3); // This isn't necessary, but it should help speed
+	bufptr += 4; // Skip past the number of triangles.
 
 	vector<MyVector> norms;
 	vector<array<MyVector, 3>> trisVec;
@@ -179,22 +179,20 @@ Object loadStl(const string& fileName) {
 			cout << "Warning: when importing STL, found a tri without a normal." << endl;
 		}
 
-		// nFacet++;
-		// nVertex += 3;
 		bufptr += 2;
 
 		MyVector norm = MyVector({(double)nx, (double)ny, (double)nz});
 		MyVector v1 = MyVector({(double)v1x, (double)v1y, (double)v1z, 1});
 		MyVector v2 = MyVector({(double)v2x, (double)v2y, (double)v2z, 1});
 		MyVector v3 = MyVector({(double)v3x, (double)v3y, (double)v3z, 1});
-		verts.insert(v1);
-		verts.insert(v2);
-		verts.insert(v3);
+		vertsSet.insert(v1);
+		vertsSet.insert(v2);
+		vertsSet.insert(v3);
 
 		norms.push_back(norm);
 		trisVec.push_back({v1, v2, v3});
 
-		// cout << "v1i=" << v1i << ", v2i=" << v2i << ", v3i=" << v3i << endl;
+		// cout << "v1=" << v1 << ", v2=" << v2 << ", v3=" << v3 << endl;
 		// cout << "norm=" << norm << endl;
 	}
 
@@ -203,13 +201,14 @@ Object loadStl(const string& fileName) {
 
 	for(size_t i=0; i<trisVec.size(); i++) {
 		array<MyVector, 3> triVec = trisVec.at(i);
-		size_t v1i = distance(verts.begin(), verts.find(triVec[0]));
-		size_t v2i = distance(verts.begin(), verts.find(triVec[1]));
-		size_t v3i = distance(verts.begin(), verts.find(triVec[2]));
+		size_t v1i = distance(vertsSet.begin(), vertsSet.find(triVec[0]));
+		size_t v2i = distance(vertsSet.begin(), vertsSet.find(triVec[1]));
+		size_t v3i = distance(vertsSet.begin(), vertsSet.find(triVec[2]));
 
 		array<size_t, 3> tri = {v1i, v2i, v3i};
 		tris.push_back(tri);
 
+		// cout << "v1i=" << v1i << ", v2i=" << v2i << ", v3i=" << v3i << endl;
 		// cout << "tri=" << tri[0] << ", " << tri[1] << ", " << tri[2] << endl;
 	}
 
@@ -217,15 +216,84 @@ Object loadStl(const string& fileName) {
 	delete[] buffer;
 
 	vector<MyVector> vertsVec;
-	vertsVec.reserve(verts.size());
+	vertsVec.reserve(vertsSet.size());
 	unordered_set<MyVector>::iterator it;
-	for(it=verts.begin(); it!=verts.end(); it++) {
+	for(it=vertsSet.begin(); it!=vertsSet.end(); it++) {
 		MyVector val = *it;
 		vertsVec.push_back(val);
 		// cout << "pushing back val=" << val << endl;
 	}
 
 	return Object(vertsVec, tris, norms);
+}
+
+Object generateCubeObject() {
+	double cubeSize = 0.5;
+
+	// http://paulbourke.net/geometry/polygonise/
+	// vector<array<size_t, 3>> cubeTris = { // counter-clockwise winding
+	// 	{2, 0, 1}, //face front
+	// 	{3, 0, 2},
+	// 	{3, 2, 4}, //face top
+	// 	{4, 2, 5},
+	// 	{2, 1, 5}, //face right
+	// 	{5, 1, 6},
+	// 	{7, 0, 4}, //face left
+	// 	{4, 0, 3},
+	// 	{4, 5, 7}, //face back
+	// 	{7, 5, 6},
+	// 	{6, 0, 7}, //face bottom
+	// 	{1, 0, 6}
+	// };
+
+	// https://stackoverflow.com/questions/8142388/in-what-order-should-i-send-my-vertices-to-opengl-for-culling
+	vector<MyVector> cubeVerts = {
+		MyVector(vector<double>{-cubeSize,-cubeSize,cubeSize,1}),
+		MyVector(vector<double>{cubeSize,-cubeSize,cubeSize,1}),
+		MyVector(vector<double>{-cubeSize,cubeSize,cubeSize,1}),
+		MyVector(vector<double>{cubeSize,cubeSize,cubeSize,1}),
+		MyVector(vector<double>{-cubeSize,-cubeSize,-cubeSize,1}),
+		MyVector(vector<double>{cubeSize,-cubeSize,-cubeSize,1}),
+		MyVector(vector<double>{-cubeSize,cubeSize,-cubeSize,1}),
+		MyVector(vector<double>{cubeSize,cubeSize,-cubeSize,1})
+	};
+	vector<array<size_t, 3>> cubeTris = {
+		{0,3,2},
+		{0,1,3},
+		{1,7,3},
+		{1,5,7},
+		{5,6,7},
+		{5,4,6},
+		{4,2,6},
+		{4,0,2},
+		{4,1,0},
+		{4,5,1},
+		{2,7,6},
+		{2,3,7}
+	};
+
+	return Object(cubeVerts, cubeTris);
+}
+
+Object generatePyramidObject() {
+	double pyramidSize = 0.25;
+	double pyramidOffset = 2.0; // Right translation (this should be done through Object.setPosition(...))
+	vector<MyVector> pyramidVerts = {
+		MyVector(vector<double>{pyramidOffset-pyramidSize,0,pyramidSize,1}),
+		MyVector(vector<double>{pyramidOffset+pyramidSize,0,pyramidSize,1}),
+		MyVector(vector<double>{pyramidOffset+pyramidSize,0,-pyramidSize,1}),
+		MyVector(vector<double>{pyramidOffset-pyramidSize,0,-pyramidSize,1}),
+		MyVector(vector<double>{pyramidOffset,pyramidSize*2,0,1})
+	};
+	vector<array<size_t, 3>> pyramidTris = {
+		{0, 1, 4},
+		{1, 2, 4},
+		{2, 3, 4},
+		{3, 0, 4},
+		{2, 1, 0},
+		{0, 3, 2}
+	};
+	return Object(pyramidVerts, pyramidTris);
 }
 
 /*
