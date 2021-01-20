@@ -18,7 +18,7 @@ make install
 
 **Features I want to implement:** FPS upper bounding, complete object transformations, texturing, specular lighting (Phong), support for multiple lights, object coloring, multithreading (is this doable?), general optimization
 
-**Current problems:** common-edge rasterization holes, unclear standard for individually coloring vertices
+**Current problems:** unclear standard for individually coloring vertices
 
 <br>
 

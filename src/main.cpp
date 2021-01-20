@@ -12,17 +12,16 @@
 #include <string>
 #include <vector>
 
-#define WINDOW_WIDTH 600
-#define WINDOW_HEIGHT 450
-#define RENDERER_SCALE 0.7
-
 using namespace std;
 
 Object generateCubeObject(); // Should these go in another file? Maybe fileloader.cpp?
 Object generatePyramidObject();
 
 int main() {
-
+	const int WINDOW_HEIGHT = 600;
+	const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (4.0/3));
+	const double RENDERER_SCALE = 0.5;
+	
 	Object loadedObj = loadStl("models/monkey.stl");
 
 	// Basic SDL: https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world

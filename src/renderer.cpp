@@ -38,7 +38,6 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale) :
 	mDepths = std::vector<uint16_t>(mTextureSizeX * mTextureSizeY);
 
 	// Perspective
-
 	// https://www.techspot.com/article/1888-how-to-3d-rendering-rasterization-ray-tracing/
 	double worldScale = std::min(mTextureSizeX, mTextureSizeY);
 	std::vector<double> perspectiveVec{
@@ -47,7 +46,6 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale) :
 		0, 0, (mZFar)/(mZFar-mZNear), 1,
 		0, 0, (-mZFar*mZNear)/(mZFar-mZNear), 0
 	};
-
 	mPerspectiveMat = MyMatrix(4, 4, perspectiveVec);
 }
 
@@ -197,16 +195,21 @@ void Renderer::fakeFragmentShader(const Light& light) {
 		MyVector triVertScreen2 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[1])));
 		MyVector triVertScreen3 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[2])));
 
-		std::array<double, 3> triXs = {triVertScreen1.elem(0), triVertScreen2.elem(0), triVertScreen3.elem(0)};
-		std::array<double, 3> triYs = {triVertScreen1.elem(1), triVertScreen2.elem(1), triVertScreen3.elem(1)};
-		std::pair<double*, double*> triXsBounds = std::minmax_element(triXs.begin(), triXs.end());
-		std::pair<double*, double*> triYsBounds = std::minmax_element(triYs.begin(), triYs.end());
+		// MyVector triEdgeScreen1 = MyVector(triVertScreen1).scalar(-1).add(triVertScreen3); // For top-left rule
+		// MyVector triEdgeScreen2 = MyVector(triVertScreen2).scalar(-1).add(triVertScreen1);
+		// MyVector triEdgeScreen3 = MyVector(triVertScreen3).scalar(-1).add(triVertScreen2);
 
 		double area = std::abs(edgeFunction(triVertScreen1, triVertScreen2, triVertScreen3)); // Why is this sometimes negative?
 
-		for(int y=(int)*(triYsBounds.first); y<(int)*(triYsBounds.second); y++) {
-			for(int x=(int)*(triXsBounds.first); x<(int)*(triXsBounds.second); x++) {
+		std::array<double, 3> triXs = {triVertScreen1.elem(0), triVertScreen2.elem(0), triVertScreen3.elem(0)};
+		std::array<double, 3> triYs = {triVertScreen1.elem(1), triVertScreen2.elem(1), triVertScreen3.elem(1)};
+		double triXBoundStart = std::max(0, (int)*(std::min_element(triXs.begin(), triXs.end())));
+		double triXBoundEnd = std::min(mTextureSizeX, 1 + (int)*(std::max_element(triXs.begin(), triXs.end())));
+		double triYBoundStart = std::max(0, (int)*(std::min_element(triYs.begin(), triYs.end())));
+		double triYBoundEnd = std::min(mTextureSizeY, 1 + (int)*(std::max_element(triYs.begin(), triYs.end())));
 
+		for(int x=triXBoundStart; x<triXBoundEnd; x++) {
+			for(int y=triYBoundStart; y<triYBoundEnd; y++) {
 				MyVector pixVert = MyVector({(double)x, (double)y, 0});
 				MyVector triVertWorld1 = MyVector(mVertsWorldRender.at(tri[0])); // 4D
 				MyVector triVertWorld2 = MyVector(mVertsWorldRender.at(tri[1]));
@@ -216,6 +219,11 @@ void Renderer::fakeFragmentShader(const Light& light) {
 				double w2 = edgeFunction(triVertScreen3, triVertScreen1, pixVert);
 				double w3 = edgeFunction(triVertScreen1, triVertScreen2, pixVert);
 
+				// Top-left rule, skipped for now because I don't think it's a problem (details in scratchapixel post above)
+				// bool shouldDraw = true;
+				// shouldDraw &= (w1 == 0 ? ((triEdgeScreen1.elem(1) == 0 && triEdgeScreen1.elem(0) < 0) ||  triEdgeScreen1.elem(1) < 0) : (w1 > 0));
+				// shouldDraw &= (w2 == 0 ? ((triEdgeScreen2.elem(1) == 0 && triEdgeScreen2.elem(0) < 0) ||  triEdgeScreen2.elem(1) < 0) : (w2 > 0));
+				// shouldDraw &= (w3 == 0 ? ((triEdgeScreen3.elem(1) == 0 && triEdgeScreen3.elem(0) < 0) ||  triEdgeScreen3.elem(1) < 0) : (w3 > 0));
 				if(w1 >= 0 && w2 >= 0 && w3 >= 0) {
 					w1 /= area;
 					w2 /= area;
@@ -248,13 +256,12 @@ void Renderer::fakeFragmentShader(const Light& light) {
 					pixToLight.add(light.position());
 					pixToLight.normalize();
 					double ambient = 0.15;
-					double diffuse = std::max(0.0, pixToLight.dot(norm)); // Eliminate negative values (the dot product shouldn't be negative)
+					double diffuse = std::max(0.0, pixToLight.dot(norm));
 					double light = std::min(1.0, ambient + diffuse);
 
 					int arrayOffset = (y*mTextureSizeX*4) + (x*4);
-					mPixels[arrayOffset + 1] = 255 * light;
 					// mPixels[arrayOffset + 0] = 
-					// mPixels[arrayOffset + 1] = 
+					mPixels[arrayOffset + 1] = 255 * light;
 					// mPixels[arrayOffset + 2] = 
 					mPixels[arrayOffset + 3] = SDL_ALPHA_OPAQUE;
 				}
