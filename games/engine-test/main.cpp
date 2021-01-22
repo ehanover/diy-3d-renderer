@@ -14,22 +14,22 @@
 
 using namespace std;
 
-Object generateCubeObject(); // Should these go in another file? Maybe fileloader.cpp?
-Object generatePyramidObject();
+// Object generateCubeObject(); // Should these go in another file? Maybe fileloader.cpp?
+// Object generatePyramidObject();
 
 int main() {
 	const int WINDOW_HEIGHT = 600;
 	const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (4.0/3));
 	const double RENDERER_SCALE = 0.5;
 	
-	Object loadedObj = loadStl("models/monkey.stl");
+	Object loadedObj = loadStl("assets/monkey.stl");
 
 	// Basic SDL: https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
 	// Fast pixel drawing: https://stackoverflow.com/questions/33304351/
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 		cout << "SDL_Init Error: " << SDL_GetError() << endl;
 	}
-	SDL_Window* window = SDL_CreateWindow("diy-opengl", 
+	SDL_Window* window = SDL_CreateWindow("engine-test", 
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
 		WINDOW_WIDTH, WINDOW_HEIGHT, 
 		SDL_WINDOW_SHOWN);

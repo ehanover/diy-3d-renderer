@@ -7,9 +7,10 @@ sudo apt install libsdl2-2.0-0 libsdl2-dev
 
 git clone https://github.com/ehanover/diy-opengl.git
 cd diy-opengl
-make
-make install
-./diy-opengl
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release .. && make
+cmake --install . --prefix ".."
+./engine-test
 ```
 
 <br>
@@ -18,7 +19,7 @@ make install
 
 **Features I want to implement:** FPS upper bounding, complete object transformations, texturing, specular lighting (Phong), support for multiple lights, object coloring, multithreading (is this doable?), general optimization
 
-**Current problems:** unclear standard for individually coloring vertices
+**Current problems:** certain shaders should belong to objects, unclear standard for individually coloring vertices
 
 <br>
 

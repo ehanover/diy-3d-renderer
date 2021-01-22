@@ -1,3 +1,4 @@
-diy-opengl
 build/
 .vscode
+*.blend*
+*.swp
