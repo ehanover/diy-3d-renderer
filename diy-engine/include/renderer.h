@@ -13,7 +13,7 @@
 class Renderer {
 
 public:
-	Renderer(SDL_Renderer* renderer, float textureScale);
+	Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, double zNear, double zFar);
 
 	void render(const std::vector<std::reference_wrapper<Object>>& objs, const Light& light);
 
@@ -64,6 +64,7 @@ private:
 
 	std::vector<MyVector> mVertsWorldRender;
 	std::vector<MyVector> mVertsScreenRender;
+	std::vector<std::array<uint8_t, 3>> mColorsRender; // (R, G, B) The alpha component is assumed to be 255 always
 	std::vector<std::array<size_t, 3>> mTrisRender;
 	std::vector<MyVector> mNormsRender;
 

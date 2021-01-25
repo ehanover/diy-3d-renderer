@@ -22,8 +22,8 @@ install(FILES "build/games/engine-test/engine-test" DESTINATION "build")
 install(DIRECTORY "games/engine-test/assets" DESTINATION "build")
 
 # Game (infinite-runner)
-#add_subdirectory(games/infinite-runner)
-#install(FILES "build/games/infinite-runner/infinite-runner" DESTINATION "build")
-#install(DIRECTORY "games/infinite-runner/assets" DESTINATION "build")
+add_subdirectory(games/infinite-runner)
+install(FILES "build/games/infinite-runner/infinite-runner" DESTINATION "build")
+install(DIRECTORY "games/infinite-runner/assets" DESTINATION "build")
 
 

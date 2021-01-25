@@ -16,18 +16,25 @@ public:
 	std::vector<MyVector> verts() const;
 	std::vector<std::array<size_t, 3>> tris() const;
 	std::vector<MyVector> norms() const;
+	void setData(std::vector<MyVector> vs, std::vector<std::array<size_t, 3>> ts);
+	void setData(std::vector<MyVector> vs, std::vector<std::array<size_t, 3>> ts, std::vector<MyVector> ns);
 
-	MyVector position() const;
-	MyVector rotation() const;
-	MyVector scale() const;
-	void setPosition(MyVector p);
-	void setRotation(MyVector r);
-	void setScale(MyVector s);
+	std::array<double, 3> position() const;
+	std::array<double, 3> rotation() const;
+	std::array<double, 3> scale() const;
+	void setPosition(std::array<double, 3> p);
+	void setRotation(std::array<double, 3> r);
+	void setScale(std::array<double, 3> s);
+
+	std::array<uint8_t, 3> color() const;
+	void setColor(std::array<uint8_t, 3> c);
 
 private:
-	MyVector mPosition;
-	MyVector mRotation;
-	MyVector mScale;
+	std::array<double, 3> mPosition;
+	std::array<double, 3> mRotation;
+	std::array<double, 3> mScale;
+
+	std::array<uint8_t, 3> mColor; // R, G, B
 
 	std::vector<MyVector> mVerts;
 	std::vector<std::array<size_t, 3>> mTris;

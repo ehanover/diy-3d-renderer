@@ -5,7 +5,7 @@
 class Light {
 
 public:
-	Light(MyVector p);
+	Light(double x, double y, double z);
 
 	MyVector position() const;
 

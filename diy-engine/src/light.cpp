@@ -1,8 +1,7 @@
 #include "light.h"
 
-Light::Light(MyVector p) :
-	mPosition(p)
-	// mIntensity(1)
+Light::Light(double x, double y, double z) :
+	mPosition(MyVector({x, y, z}))
 {
 
 }

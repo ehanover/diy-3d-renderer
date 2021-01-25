@@ -3,16 +3,16 @@
 #include <cmath>
 #include <iostream>
 
-Renderer::Renderer(SDL_Renderer* renderer, float textureScale) :
+Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, double zNear, double zFar) :
 	mRenderer(renderer),
 	mTextureSizeX(0),
 	mTextureSizeY(0),
 	mTextureScaledBounds(),
 	mTexture(),
 
-	mCamera(),
-	mZNear(3),
-	mZFar(-3),
+	mCamera(camera),
+	mZNear(zNear),
+	mZFar(zFar),
 	mPerspectiveMat(),
 
 	mVertsWorldRender(),
@@ -54,6 +54,7 @@ void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, c
 	std::fill(mDepths.begin(), mDepths.end(), (2>>15)-1);
 	mVertsWorldRender.clear();
 	mVertsScreenRender.clear();
+	mColorsRender.clear();
 	mTrisRender.clear();
 	mNormsRender.clear();
 
@@ -95,22 +96,40 @@ void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>
 		std::vector<MyVector> objVerts = obj.verts();
 		std::vector<std::array<size_t, 3>> objTris = obj.tris();
 		std::vector<MyVector> objNorms = obj.norms();
+		std::array<uint8_t, 3> objColor = obj.color();
 
 		// Apply transformation matrix
-		double rotY = obj.rotation().elem(1);
-		std::vector<double> rotYVec{ // Y rotation
-			cos(rotY), 0, -sin(rotY), 0,
-			0, 1, 0, 0,
-			sin(rotY), 0, cos(rotY), 0,
+		std::array<double, 3> pos = obj.position();
+		std::array<double, 3> rot = obj.rotation();
+		std::array<double, 3> scale = obj.scale();
+		std::vector<double> rotXVec{ // X rotation
+			1, 0, 0, 0,
+			0, cos(rot[0]), -sin(rot[0]), 0,
+			0, sin(rot[0]), cos(rot[0]), 0,
 			0, 0, 0, 1
 		};
-		// std::vector<double> rotYVec{ // X rotation
-		// 	1, 0, 0, 0,
-		// 	0, cos(rotY), -sin(rotY), 0,
-		// 	0, sin(rotY), cos(rotY), 0,
-		// 	0, 0, 0, 1
-		// };
-		MyMatrix transMat = MyMatrix(4, 4, rotYVec);
+		std::vector<double> rotYVec{ // Y rotation
+			cos(rot[1]), 0, -sin(rot[1]), 0,
+			0, 1, 0, 0,
+			sin(rot[1]), 0, cos(rot[1]), 0,
+			0, 0, 0, 1
+		};
+		std::vector<double> rotZVec{ // Z rotation
+			cos(rot[2]), sin(rot[2]), 0, 0,
+			-sin(rot[2]), cos(rot[2]), 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		};
+		std::vector<double> posScaleVec {
+			scale[0], 0, 0, 0,
+			0, scale[1], 0, 0,
+			0, 0, scale[2], 0, 
+			pos[0], pos[1], pos[2], 1
+		};
+		MyMatrix transMat = MyMatrix(4, 4, rotXVec);
+		transMat.multiply(MyMatrix(4, 4, rotYVec));
+		transMat.multiply(MyMatrix(4, 4, rotZVec));
+		transMat.multiply(MyMatrix(4, 4, posScaleVec));
 		// Multiply all transformations together before looping over object verts
 
 		for(size_t j=0; j<objVerts.size(); j++) {
@@ -123,6 +142,8 @@ void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>
 			objVert.multiplyByMatrix(mPerspectiveMat);
 			objVert.scalar(1.0/objVert.elem(3)); // Homogenize
 			mVertsScreenRender.push_back(objVert);
+
+			mColorsRender.push_back(objColor);
 		}
 
 		MyMatrix transMatNormals(transMat); // Used to transform the normal vectors along with the vert transformations
@@ -199,6 +220,10 @@ void Renderer::fakeFragmentShader(const Light& light) {
 		// MyVector triEdgeScreen2 = MyVector(triVertScreen2).scalar(-1).add(triVertScreen1);
 		// MyVector triEdgeScreen3 = MyVector(triVertScreen3).scalar(-1).add(triVertScreen2);
 
+		std::array<uint8_t, 3>& color1 = mColorsRender.at(tri[0]);
+		std::array<uint8_t, 3>& color2 = mColorsRender.at(tri[1]);
+		std::array<uint8_t, 3>& color3 = mColorsRender.at(tri[2]);
+
 		double area = std::abs(edgeFunction(triVertScreen1, triVertScreen2, triVertScreen3)); // Why is this sometimes negative?
 
 		std::array<double, 3> triXs = {triVertScreen1.elem(0), triVertScreen2.elem(0), triVertScreen3.elem(0)};
@@ -251,6 +276,10 @@ void Renderer::fakeFragmentShader(const Light& light) {
 					pixVertWorldInterp.dropW();
 					pixVertWorldInterp.normalize();
 
+					uint8_t ir = color1[0]*w1 + color2[0]*w2 + color3[0]*w3;
+					uint8_t ig = color1[1]*w1 + color2[1]*w2 + color3[1]*w3;
+					uint8_t ib = color1[2]*w1 + color2[2]*w2 + color3[2]*w3;
+
 					MyVector pixToLight = MyVector(pixVertWorldInterp);
 					pixToLight.scalar(-1);
 					pixToLight.add(light.position());
@@ -260,9 +289,9 @@ void Renderer::fakeFragmentShader(const Light& light) {
 					double light = std::min(1.0, ambient + diffuse);
 
 					int arrayOffset = (y*mTextureSizeX*4) + (x*4);
-					// mPixels[arrayOffset + 0] = 
-					mPixels[arrayOffset + 1] = 255 * light;
-					// mPixels[arrayOffset + 2] = 
+					mPixels[arrayOffset + 0] = ib * light;
+					mPixels[arrayOffset + 1] = ig * light;
+					mPixels[arrayOffset + 2] = ir * light;
 					mPixels[arrayOffset + 3] = SDL_ALPHA_OPAQUE;
 				}
 

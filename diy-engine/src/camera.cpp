@@ -1,9 +1,18 @@
 #include "camera.h"
 
 Camera::Camera() :
-	mCameraEye(MyVector(std::vector<double>{0, 1, 4})),
+	mCameraEye(MyVector(std::vector<double>{0, 0, 5})),
 	mCameraAt(MyVector(std::vector<double>{0, 0, 0})),
 	mCameraUp(MyVector(std::vector<double>{0, 1, 0})),
+	mProjectionMatrix()
+{
+	setProjectionMatrix();
+}
+
+Camera::Camera(double ex, double ey, double ez, double ax, double ay, double az, double ux, double uy, double uz) :
+	mCameraEye(MyVector(std::vector<double>{ex, ey, ez})),
+	mCameraAt(MyVector(std::vector<double>{ax, ay, az})),
+	mCameraUp(MyVector(std::vector<double>{ux, uy, uz})),
 	mProjectionMatrix()
 {
 	setProjectionMatrix();

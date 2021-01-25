@@ -15,11 +15,11 @@ cmake --install . --prefix ".."
 
 <br>
 
-**Features I've implemented:** custom matrix and vector classes, some object transformations, projection+perspective projections, camera movement, triangle rasterization, normal creation, backface+frustum culling, STL importing, ambient+diffuse lighting, z-buffering
+**Features I've implemented:** custom matrix and vector classes, object transformations, projection+perspective projections, camera movement, triangle rasterization, normal creation, backface+frustum culling, STL importing, ambient+diffuse lighting, z-buffering
 
-**Features I want to implement:** FPS upper bounding, complete object transformations, texturing, specular lighting (Phong), support for multiple lights, object coloring, multithreading (is this doable?), general optimization
+**Features I want to implement:** FPS upper bounding, texturing, specular lighting (Phong), support for multiple lights, object coloring, multithreading (is this doable?), general optimization
 
-**Current problems:** certain shaders should belong to objects, unclear standard for individually coloring vertices
+**Current problems:** shaders should belong to objects, unclear standard for individually coloring vertices
 
 <br>
 

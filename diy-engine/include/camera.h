@@ -7,6 +7,7 @@ class Camera {
 
 public:
 	Camera();
+	Camera(double ex, double ey, double ez, double ax, double ay, double az, double ux, double uy, double uz);
 
 	void moveCamera(MyVector newEye, MyVector newAt, MyVector newUp);
 
