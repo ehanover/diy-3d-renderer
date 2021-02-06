@@ -45,18 +45,6 @@ std::vector<MyVector> Object::norms() const {
 	return mNorms;
 }
 
-void Object::setData(std::vector<MyVector> vs, std::vector<std::array<size_t, 3>> ts) {
-	mVerts = vs;
-	mTris = ts;
-	calculateNormals();
-}
-
-void Object::setData(std::vector<MyVector> vs, std::vector<std::array<size_t, 3>> ts, std::vector<MyVector> ns) {
-	mVerts = vs;
-	mTris = ts;
-	mNorms = ns;
-}
-
 std::array<double, 3> Object::position() const {
 	return mPosition;
 }
@@ -90,7 +78,7 @@ void Object::setColor(std::array<uint8_t, 3> c) {
 }
 
 void Object::calculateNormals() {
-	std::cout << "manually calculating normals" << std::endl;
+	// std::cout << "manually calculating normals" << std::endl;
 	std::vector<MyVector> normsVec;
 	normsVec.reserve(tris().size());
 	for(size_t i=0; i<tris().size(); i++) {
@@ -101,11 +89,9 @@ void Object::calculateNormals() {
 
 		MyVector a = MyVector(std::vector<double>{triVert2[0] - triVert1[0], triVert2[1] - triVert1[1], triVert2[2] - triVert1[2]});
 		MyVector b = MyVector(std::vector<double>{triVert3[0] - triVert1[0], triVert3[1] - triVert1[1], triVert3[2] - triVert1[2]});
-		a.cross(b);
-		a.normalize();
+		a.cross(b).normalize();
 		mNorms.push_back(a);
-		// b.cross(a);
-		// b.normalize();
+		// b.cross(a).normalize();
 		// mNorms.push_back(b);
 	}
 }

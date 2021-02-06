@@ -48,7 +48,6 @@ private:
 	void fakeFragmentShader(const Light& light);
 	std::vector<double> shiftVertOrigin(const MyVector& v);
 	double edgeFunction(const MyVector& a, const MyVector& b, const MyVector& c);
-	double facingRatio(const MyVector& norm);
 	uint16_t scaledVertDepth(double dw);
 
 	SDL_Renderer* mRenderer;

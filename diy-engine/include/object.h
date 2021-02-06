@@ -16,10 +16,8 @@ public:
 	std::vector<MyVector> verts() const;
 	std::vector<std::array<size_t, 3>> tris() const;
 	std::vector<MyVector> norms() const;
-	void setData(std::vector<MyVector> vs, std::vector<std::array<size_t, 3>> ts);
-	void setData(std::vector<MyVector> vs, std::vector<std::array<size_t, 3>> ts, std::vector<MyVector> ns);
 
-	std::array<double, 3> position() const;
+	std::array<double, 3> position() const; // TODO should these return references?
 	std::array<double, 3> rotation() const;
 	std::array<double, 3> scale() const;
 	void setPosition(std::array<double, 3> p);

@@ -3,12 +3,12 @@
 
 MyVector::MyVector(std::vector<double> d) :
 	mSize(d.size()), mData(std::vector<double>(d)) {
-	// std::cout << "cons main" << std::endl;
+
 }
 
 MyVector::MyVector(const MyVector& o) :
 	mSize(o.size()), mData(std::vector<double>(o.data())) {
-	// std::cout << "cons copy" << std::endl;
+
 }
 
 size_t MyVector::size() const {
@@ -19,9 +19,9 @@ const std::vector<double>& MyVector::data() const {
 	return mData;
 }
 
-const double& MyVector::elem(size_t i) const {
-	return mData.at(i);
-}
+// const double& MyVector::elem(size_t i) const { // (moved to inline)
+// 	return mData.at(i);
+// }
 
 double MyVector::magnitude() const {
 	double sum = 0;
@@ -63,8 +63,6 @@ MyVector& MyVector::scalar(const double& rhs) {
 	return *this;
 }
 
-
-
 MyVector& MyVector::cross(const MyVector& rhs) {
 	if(rhs.size() != size()) {
 		std::cerr << "Error: tried crossing vectors of different sizes, skipping" << std::endl;
@@ -84,7 +82,7 @@ MyVector& MyVector::cross(const MyVector& rhs) {
 }
 
 MyVector& MyVector::normalize() {
-	// I could to the Quake fast inverse square root trick here
+	// I could to the Quake fast inverse square root trick here, but I tested it and found that it's somehow slower
 	double m = magnitude();
 	return scalar(1/m);
 }

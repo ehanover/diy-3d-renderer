@@ -6,6 +6,6 @@ Light::Light(double x, double y, double z) :
 
 }
 
-MyVector Light::position() const {
-	return mPosition;
-}
+// const MyVector& Light::position() const { // (moved to be inline)
+// 	return mPosition;
+// }

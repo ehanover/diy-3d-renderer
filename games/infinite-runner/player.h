@@ -12,7 +12,7 @@ public:
 
 	std::vector<std::reference_wrapper<Object>> getObjects();
 
-	void update(int deltaMS); // Could ticks be an int?
+	void update(int deltaMS);
 	void jump();
 
 	bool isMovingLeft;

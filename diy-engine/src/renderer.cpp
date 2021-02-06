@@ -40,9 +40,10 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, do
 	// Perspective
 	// https://www.techspot.com/article/1888-how-to-3d-rendering-rasterization-ray-tracing/
 	double worldScale = std::min(mTextureSizeX, mTextureSizeY);
+	double fovMultiplier = 1.3; // Higher multiplier means narrower view
 	std::vector<double> perspectiveVec{
-		worldScale, 0, 0, 0, // Makes assumption about FOV angle
-		0, worldScale, 0, 0,
+		worldScale*fovMultiplier, 0, 0, 0, // Makes assumption about FOV angle
+		0, worldScale*fovMultiplier, 0, 0,
 		0, 0, (mZFar)/(mZFar-mZNear), 1,
 		0, 0, (-mZFar*mZNear)/(mZFar-mZNear), 0
 	};
@@ -50,8 +51,9 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, do
 }
 
 void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, const Light& light) {
-	std::fill(mPixels.begin(), mPixels.end(), 0);
-	std::fill(mDepths.begin(), mDepths.end(), (2>>15)-1);
+	std::fill(mPixels.begin(), mPixels.end(), 180);
+	std::fill(mDepths.begin(), mDepths.end(), (2>>16)-1);
+
 	mVertsWorldRender.clear();
 	mVertsScreenRender.clear();
 	mColorsRender.clear();
@@ -60,7 +62,7 @@ void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, c
 
 	fakeVertexShader(objs); // The vertex shader takes in objs and breaks them down to verts+tris+norms+etc stored in member vars
 							// Maybe this should instead return lists of verts+norms+etc that utilize counterclockwise winding order so tri storage can be eliminated
-	fakeGeometryShader();
+	// fakeGeometryShader();
 	fakeFragmentShader(light);
 	// drawDebugVerts();
 
@@ -77,12 +79,16 @@ void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, c
 void Renderer::drawDebugVerts() {
 	for(size_t i=0; i<mVertsScreenRender.size(); i++) {
 		// Assuming these vectors' w component is 1
-		MyVector vert = mVertsScreenRender.at(i);
-		// std::cout << "drawing debug vert " << vert << std::endl;
-		int x = (int) vert.elem(0) + (mTextureSizeX/2); // Centered world coordinates
-		int y = (int) vert.elem(1) + (mTextureSizeY/2);
 
-		for(int s=0; s<3; s++) {
+		std::vector<double> v = shiftVertOrigin(mVertsScreenRender.at(i));
+		int x = (int) v[0]; // Centered world coordinates
+		int y = (int) v[1];
+
+		if(x > mTextureSizeX || y > mTextureSizeY || x < 0 || y < 0) {
+			continue;
+		}
+		// std::cout << "drawing debug vert " << vert << std::endl;
+		for(int s=0; s<2; s++) {
 			mPixels[(y*mTextureSizeX*4) + ((x+s)*4) + 2] = 250;
 			mPixels[(y*mTextureSizeX*4) + ((x+s)*4) + 3] = SDL_ALPHA_OPAQUE;
 		}
@@ -92,7 +98,7 @@ void Renderer::drawDebugVerts() {
 void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>>& objs) {
 	size_t triObjOffset = 0;
 	for(size_t i=0; i<objs.size(); i++) {
-		Object& obj = objs.at(i).get();
+		Object& obj = objs.at(i);//.get();
 		std::vector<MyVector> objVerts = obj.verts();
 		std::vector<std::array<size_t, 3>> objTris = obj.tris();
 		std::vector<MyVector> objNorms = obj.norms();
@@ -130,7 +136,6 @@ void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>
 		transMat.multiply(MyMatrix(4, 4, rotYVec));
 		transMat.multiply(MyMatrix(4, 4, rotZVec));
 		transMat.multiply(MyMatrix(4, 4, posScaleVec));
-		// Multiply all transformations together before looping over object verts
 
 		for(size_t j=0; j<objVerts.size(); j++) {
 			MyVector objVert = objVerts.at(j);
@@ -173,6 +178,7 @@ void Renderer::fakeGeometryShader() {
 }
 
 std::vector<double> Renderer::shiftVertOrigin(const MyVector& v) {
+	// TODO it seems silly that this function goes from Vector to array to Vector, even though it probably isn't any less efficient
 	return {v.elem(0) + (mTextureSizeX/2), v.elem(1) + (mTextureSizeY/2), v.elem(2)};
 }
 
@@ -184,31 +190,29 @@ double Renderer::edgeFunction(const MyVector& a, const MyVector& b, const MyVect
 	// return ( (a[0] - b[0]) * (c[1] - a[1]) - (a[1] - b[1]) * (c[0] - a[0]) ); // Supposed to fix rasterizing if vertices declared clockwise
 }
 
-double Renderer::facingRatio(const MyVector& norm) {
-	// https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/shading-normals
-	return norm.dot(mCamera.cameraEye()); // This might also depend on cameraAt variable, but if cameraAt is all zero then it doesn't matter
-}
-
 uint16_t Renderer::scaledVertDepth(double dw) {
 	// double f = (mZFar/(mZFar-mZNear)) + (1/dw)*(-mZFar*mZNear)/(mZFar-mZNear); // https://en.wikipedia.org/wiki/Z-buffering#Mathematics
+	//     (this might be a formula that has non-linear depth, increasing resolution close to the camera)
+	//     (or it might be for coordinates that have projection/perspective or something like that)
+
 	double f = (-dw + mZNear) / (mZNear + -mZFar); // (my intuition calculation)
-	uint16_t r = (uint16_t) (((2<<15)-1) * f);
-	// std::cout << "got z=" << z << ", f=" << f << ", r=" << r << std::endl;
+	uint16_t r = 65535 * f;
 	return r;
 }
 
 void Renderer::fakeFragmentShader(const Light& light) {
 	// Calculates pixel colors from verts+tris+norms by rasterizing
 	// https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage
-
 	for(size_t i=0; i<mTrisRender.size(); i++) {
 
 		// Every tri should have a corresponding norm
 		std::array<size_t, 3>& tri = mTrisRender.at(i);
 		MyVector& norm = mNormsRender.at(i);
-		double ratio = facingRatio(norm);
 
-		if(ratio <= 0) { // https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/shading-normals
+		MyVector cameraToTri = MyVector(mCamera.cameraEye());
+		MyVector cullVert = mVertsWorldRender.at(tri[0]);
+		cameraToTri.scalar(-1).add(cullVert.dropW());
+		if(cameraToTri.dot(norm) >= 0) {
 			continue;
 		}
 
@@ -224,7 +228,8 @@ void Renderer::fakeFragmentShader(const Light& light) {
 		std::array<uint8_t, 3>& color2 = mColorsRender.at(tri[1]);
 		std::array<uint8_t, 3>& color3 = mColorsRender.at(tri[2]);
 
-		double area = std::abs(edgeFunction(triVertScreen1, triVertScreen2, triVertScreen3)); // Why is this sometimes negative?
+		// double area = std::abs(edgeFunction(triVertScreen1, triVertScreen2, triVertScreen3)); // Why is this sometimes negative?
+		double area = edgeFunction(triVertScreen1, triVertScreen2, triVertScreen3); // Why doesn't it matter when this is negative?
 
 		std::array<double, 3> triXs = {triVertScreen1.elem(0), triVertScreen2.elem(0), triVertScreen3.elem(0)};
 		std::array<double, 3> triYs = {triVertScreen1.elem(1), triVertScreen2.elem(1), triVertScreen3.elem(1)};
@@ -267,7 +272,7 @@ void Renderer::fakeFragmentShader(const Light& light) {
 						continue;
 					}
 					uint16_t depthScaled = scaledVertDepth(depthWorld);
-					size_t depthIndex = (y*mTextureSizeY) + x;
+					size_t depthIndex = (y*mTextureSizeX) + x;
 					if(depthScaled >= mDepths[depthIndex]) {
 						continue;
 					}
@@ -276,10 +281,6 @@ void Renderer::fakeFragmentShader(const Light& light) {
 					pixVertWorldInterp.dropW();
 					pixVertWorldInterp.normalize();
 
-					uint8_t ir = color1[0]*w1 + color2[0]*w2 + color3[0]*w3;
-					uint8_t ig = color1[1]*w1 + color2[1]*w2 + color3[1]*w3;
-					uint8_t ib = color1[2]*w1 + color2[2]*w2 + color3[2]*w3;
-
 					MyVector pixToLight = MyVector(pixVertWorldInterp);
 					pixToLight.scalar(-1);
 					pixToLight.add(light.position());
@@ -287,6 +288,10 @@ void Renderer::fakeFragmentShader(const Light& light) {
 					double ambient = 0.15;
 					double diffuse = std::max(0.0, pixToLight.dot(norm));
 					double light = std::min(1.0, ambient + diffuse);
+
+					uint8_t ir = color1[0]*w1 + color2[0]*w2 + color3[0]*w3;
+					uint8_t ig = color1[1]*w1 + color2[1]*w2 + color3[1]*w3;
+					uint8_t ib = color1[2]*w1 + color2[2]*w2 + color3[2]*w3;
 
 					int arrayOffset = (y*mTextureSizeX*4) + (x*4);
 					mPixels[arrayOffset + 0] = ib * light;

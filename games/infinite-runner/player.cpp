@@ -66,10 +66,8 @@ void Player::update(int deltaMS) {
 	} else {
 		playerPosition[1] += yVel * deltaMS;
 		yVel += yAcc * deltaMS;
-		// std::cout << "dt=" << deltaMS << ", p=" << yPos << ", v=" << yVel << ", a=" << yAcc << std::endl;
 
 		if(playerPosition[1] <= 0) {
-			// std::cout << "grounded" << std::endl;
 			isGrounded = true;
 			playerPosition[1] = 0;
 			yVel = 0;
@@ -79,12 +77,12 @@ void Player::update(int deltaMS) {
 	}
 
 	if(isMovingLeft) {
-		playerPosition[0] += -0.005 * deltaMS;
+		playerPosition[0] += -0.007 * deltaMS;
 	} else if(isMovingRight) {
-		playerPosition[0] += 0.005 * deltaMS;
+		playerPosition[0] += 0.007 * deltaMS;
 	}
 
-	hat.setPosition({hatPos[0] + playerPosition[0], hatPos[1] + playerPosition[1]*1.15, hatPos[2] + playerPosition[2]});
+	hat.setPosition({hatPos[0] + playerPosition[0], hatPos[1] + playerPosition[1]*1.1, hatPos[2] + playerPosition[2]});
 	head.setPosition({headPos[0] + playerPosition[0], headPos[1] + playerPosition[1], headPos[2] + playerPosition[2]});
 	torso.setPosition({torsoPos[0] + playerPosition[0], torsoPos[1] + playerPosition[1], torsoPos[2] + playerPosition[2]});
 	armL.setPosition({armLPos[0] + playerPosition[0], armLPos[1] + playerPosition[1], armLPos[2] + playerPosition[2]});
@@ -99,8 +97,7 @@ void Player::jump() {
 		return;
 	}
 	isGrounded = false;
-	// std::cout << "jumping..." << std::endl;
-	yAcc = -0.000035;
-	yVel = 0.016; // (This velocity value gets multiplied by deltaMS before it's added to position)
+	yAcc = -0.00004;
+	yVel = 0.017; // (This velocity value gets multiplied by deltaMS before it's added to position)
 
 }

@@ -1,16 +1,16 @@
 # DIY-OpenGL
 
-My exploration of 3D rendering, without OpenGL or any other 3D graphics library. 
+My exploration of 3D rendering, without using OpenGL or any other 3D graphics libraries. 
 
 ```
-sudo apt install libsdl2-2.0-0 libsdl2-dev
+sudo apt install cmake libsdl2-2.0-0 libsdl2-dev
 
 git clone https://github.com/ehanover/diy-opengl.git
 cd diy-opengl
 mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release .. && make
-cmake --install . --prefix ".."
-./engine-test
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make && cmake --install . --prefix ".."
+./infinite-runner
 ```
 
 <br>

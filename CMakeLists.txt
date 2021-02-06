@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_compile_options(-Wall)
 endif()
+#SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
 
 project(diy-opengl VERSION 2.0.0)
 
@@ -18,12 +19,12 @@ add_subdirectory(diy-engine)
 
 # Game (engine-test)
 add_subdirectory(games/engine-test)
-install(FILES "build/games/engine-test/engine-test" DESTINATION "build")
+install(FILES "build/games/engine-test/engine-test" DESTINATION "build" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 install(DIRECTORY "games/engine-test/assets" DESTINATION "build")
 
 # Game (infinite-runner)
 add_subdirectory(games/infinite-runner)
-install(FILES "build/games/infinite-runner/infinite-runner" DESTINATION "build")
+install(FILES "build/games/infinite-runner/infinite-runner" DESTINATION "build" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 install(DIRECTORY "games/infinite-runner/assets" DESTINATION "build")
 
 

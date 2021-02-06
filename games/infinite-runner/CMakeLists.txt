@@ -2,7 +2,7 @@
 # Using "include" folder from a library in the same project: https://stackoverflow.com/a/47060462
 
 set(MyGameName "infinite-runner")
-set(MySources main.cpp player.cpp)
+set(MySources main.cpp player.cpp ground.cpp)
 
 # Add source files
 add_executable(${MyGameName} ${MySources})
