@@ -28,9 +28,12 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-pg .. && make && cmake --ins
 using namespace std;
 
 int main() {
-	const int WINDOW_HEIGHT = 750;
-	const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (4.0/3));
-	const double RENDERER_SCALE = 0.35;
+	// const int WINDOW_HEIGHT = 750;
+	// const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (4.0/3));
+	const int WINDOW_HEIGHT = 700;
+	const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (16.0/9));
+	// const double RENDERER_SCALE = 0.35;
+	const double RENDERER_SCALE = 0.45;
 	
 	// Basic SDL: https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
 	// Fast pixel drawing: https://stackoverflow.com/questions/33304351/

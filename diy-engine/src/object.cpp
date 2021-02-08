@@ -4,7 +4,7 @@ Object::Object(std::vector<MyVector> vs, std::vector<std::array<size_t, 3>> ts) 
 	mPosition(std::array<double, 3>{0, 0, 0}),
 	mRotation(std::array<double, 3>{0, 0, 0}),
 	mScale(std::array<double, 3>{1, 1, 1}),
-	mColor({255, 0, 255}),
+	mColor({255, 0, 255}), mColorFunction(nullptr),
 	mVerts(vs), mTris(ts), mNorms()
 {
 	calculateNormals();
@@ -14,7 +14,7 @@ Object::Object(std::vector<MyVector> vs, std::vector<std::array<size_t, 3>> ts, 
 	mPosition(std::array<double, 3>{0,0,0}),
 	mRotation(std::array<double, 3>{0,0,0}),
 	mScale(std::array<double, 3>{1,1,1}),
-	mColor({255, 0, 255}),
+	mColor({255, 0, 255}), mColorFunction(nullptr),
 	mVerts(vs), mTris(ts), mNorms(ns)
 {
 	if(mNorms.size() == 0 || mNorms.size() < mTris.size()) {
@@ -27,7 +27,7 @@ Object::Object(const Object& o) :
 	mPosition(o.position()),
 	mRotation(o.rotation()),
 	mScale(o.scale()),
-	mColor(o.color()),
+	mColor(o.color()), mColorFunction(o.colorFunction()),
 	mVerts(o.verts()), mTris(o.tris()), mNorms(o.norms())
 {
 
@@ -75,6 +75,21 @@ std::array<uint8_t, 3> Object::color() const {
 
 void Object::setColor(std::array<uint8_t, 3> c) {
 	mColor = c;
+}
+
+std::array<uint8_t, 3> (*Object::colorFunction(void) const)(const MyVector& v) {
+	return mColorFunction;
+}
+
+void Object::setColorFunction(std::array<uint8_t, 3> (*func)(const MyVector& v)) {
+	mColorFunction = func;
+}
+
+std::array<uint8_t, 3> Object::getVertColor(const MyVector& v) {
+	if(mColorFunction != nullptr) {
+		return (*mColorFunction)(v);
+	}
+	return mColor;
 }
 
 void Object::calculateNormals() {

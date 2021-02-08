@@ -26,6 +26,10 @@ public:
 
 	std::array<uint8_t, 3> color() const;
 	void setColor(std::array<uint8_t, 3> c);
+	// https://stackoverflow.com/questions/20617067/returning-function-pointer-type
+	std::array<uint8_t, 3> (*colorFunction(void) const)(const MyVector& v); // Weird syntax for returning a function pointer
+	void setColorFunction(std::array<uint8_t, 3> (*func)(const MyVector& v));
+	std::array<uint8_t, 3> getVertColor(const MyVector& v);
 
 private:
 	std::array<double, 3> mPosition;
@@ -33,6 +37,7 @@ private:
 	std::array<double, 3> mScale;
 
 	std::array<uint8_t, 3> mColor; // R, G, B
+	std::array<uint8_t, 3> (*mColorFunction)(const MyVector& v); // Pointer to a function that returns an array given an index
 
 	std::vector<MyVector> mVerts;
 	std::vector<std::array<size_t, 3>> mTris;

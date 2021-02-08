@@ -56,7 +56,7 @@ std::vector<std::reference_wrapper<Object>> Player::getObjects() {
 void Player::update(int deltaMS) {
 	if(isGrounded) {
 		walkMS += deltaMS;
-		float animValL = std::sin((walkMS)/120.0) * 0.6;
+		float animValL = std::sin((walkMS)/110.0) * 0.8;
 		float animValR = -1 * animValL;
 		legL.setRotation(std::array<double, 3>{-3.14 + 0.0 + animValL, 0, 0});
 		legR.setRotation(std::array<double, 3>{-3.14 + 0.0 + animValR, 0, 0});

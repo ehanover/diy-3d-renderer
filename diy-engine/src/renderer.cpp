@@ -102,7 +102,7 @@ void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>
 		std::vector<MyVector> objVerts = obj.verts();
 		std::vector<std::array<size_t, 3>> objTris = obj.tris();
 		std::vector<MyVector> objNorms = obj.norms();
-		std::array<uint8_t, 3> objColor = obj.color();
+		// std::array<uint8_t, 3> objColor = obj.color();
 
 		// Apply transformation matrix
 		std::array<double, 3> pos = obj.position();
@@ -140,15 +140,18 @@ void Renderer::fakeVertexShader(const std::vector<std::reference_wrapper<Object>
 		for(size_t j=0; j<objVerts.size(); j++) {
 			MyVector objVert = objVerts.at(j);
 
+			// mColorsRender.push_back(objColor);
+			mColorsRender.push_back(obj.getVertColor(objVert)); // Do coloring on position in pre-transformation world space
+			// Re-"calculating" colors every frame is silly if the color functions never change
+
 			objVert.multiplyByMatrix(transMat);
 			mVertsWorldRender.push_back(objVert);
-			
+
 			objVert.multiplyByMatrix(mCamera.projectionMatrix());
 			objVert.multiplyByMatrix(mPerspectiveMat);
 			objVert.scalar(1.0/objVert.elem(3)); // Homogenize
 			mVertsScreenRender.push_back(objVert);
 
-			mColorsRender.push_back(objColor);
 		}
 
 		MyMatrix transMatNormals(transMat); // Used to transform the normal vectors along with the vert transformations
