@@ -20,3 +20,6 @@ target_link_libraries(${MyLibName} PRIVATE ${SDL2_LIBRARIES})
 # Include engine headers
 target_include_directories(${MyLibName} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
+# Add threading flags
+#target_compile_options(${MyLibName} PUBLIC -pthread)
+target_link_options(${MyLibName} PUBLIC -pthread)

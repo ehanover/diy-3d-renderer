@@ -30,10 +30,9 @@ using namespace std;
 int main() {
 	// const int WINDOW_HEIGHT = 750;
 	// const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (4.0/3));
-	const int WINDOW_HEIGHT = 700;
+	const int WINDOW_HEIGHT = 600;
 	const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (16.0/9));
-	// const double RENDERER_SCALE = 0.35;
-	const double RENDERER_SCALE = 0.45;
+	const double RENDERER_SCALE = 0.5;
 	
 	// Basic SDL: https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
 	// Fast pixel drawing: https://stackoverflow.com/questions/33304351/
@@ -59,7 +58,7 @@ int main() {
 
 	Camera mycamera(0, 5, 12, 0, 4, 0, 0, 1, 0);
 	Light mylight(4,5,4); // TODO experiment with light position
-	Renderer myrenderer(renderer, RENDERER_SCALE, mycamera, 2, -6*9);
+	Renderer myrenderer(renderer, RENDERER_SCALE, mylight, mycamera, 2, -6*9);
 
 	Player player;
 	Ground ground;
@@ -121,7 +120,7 @@ int main() {
 		for(Object& o : player.getObjects()) {
 			objs.push_back(o);
 		}
-		myrenderer.render(objs, mylight);
+		myrenderer.render(objs);
 		SDL_RenderPresent(renderer);
 
 		// Calculate and print FPS

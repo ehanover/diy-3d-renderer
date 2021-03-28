@@ -3,13 +3,14 @@
 #include <cmath>
 #include <iostream>
 
-Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, double zNear, double zFar) :
+Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Light light, Camera camera, double zNear, double zFar) :
 	mRenderer(renderer),
 	mTextureSizeX(0),
 	mTextureSizeY(0),
 	mTextureScaledBounds(),
 	mTexture(),
 
+	mLight(light),
 	mCamera(camera),
 	mZNear(zNear),
 	mZFar(zFar),
@@ -20,7 +21,9 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, do
 	mTrisRender(),
 
 	mPixels(),
-	mDepths()
+	mDepths(),
+
+	mRunning(true)
 {
 	SDL_GetRendererOutputSize(mRenderer, &mTextureSizeX, &mTextureSizeY);
 	mTextureScaledBounds = {.x=0, .y=0, .w=mTextureSizeX, .h=mTextureSizeY}; // https://gamedev.stackexchange.com/a/102881
@@ -38,6 +41,7 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, do
 	mDepths = std::vector<uint16_t>(mTextureSizeX * mTextureSizeY);
 
 	// Perspective
+	// Maybe the perspective stuff to camera.cpp, along with z planes?
 	// https://www.techspot.com/article/1888-how-to-3d-rendering-rasterization-ray-tracing/
 	double worldScale = std::min(mTextureSizeX, mTextureSizeY);
 	double fovMultiplier = 1.3; // Higher multiplier means narrower view
@@ -48,12 +52,24 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, do
 		0, 0, (-mZFar*mZNear)/(mZFar-mZNear), 0
 	};
 	mPerspectiveMat = MyMatrix(4, 4, perspectiveVec);
+
+	int maxThreads = 8;
+	int numThreads = std::min(maxThreads, (int) std::thread::hardware_concurrency());
+	for(int i=0; i<numThreads; i++) {
+		// mThreadPool.push_back(std::thread(Renderer::fakeFragmentShaderThreadFunction));
+		mThreadPool.push_back( std::thread([this]{fakeFragmentShaderThreadFunction();}) );
+	}
+	testTriCount = 0;
 }
 
-void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, const Light& light) {
-	std::fill(mPixels.begin(), mPixels.end(), 180);
-	std::fill(mDepths.begin(), mDepths.end(), (2>>16)-1);
+void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs) {
+	{
+		std::unique_lock<std::mutex> lock(mDrawMutex);
+		std::fill(mPixels.begin(), mPixels.end(), 180);
+		std::fill(mDepths.begin(), mDepths.end(), (2>>16)-1);
+	}
 
+	mTaskMutex.lock();
 	mVertsWorldRender.clear();
 	mVertsScreenRender.clear();
 	mColorsRender.clear();
@@ -63,8 +79,21 @@ void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, c
 	fakeVertexShader(objs); // The vertex shader takes in objs and breaks them down to verts+tris+norms+etc stored in member vars
 							// Maybe this should instead return lists of verts+norms+etc that utilize counterclockwise winding order so tri storage can be eliminated
 	// fakeGeometryShader();
-	fakeFragmentShader(light);
+	// fakeFragmentShader(light);
 	// drawDebugVerts();
+
+	mTrisIndex = 0;
+	mTrisDone = 0;
+	mTrisCondition.notify_all();
+	mTaskMutex.unlock(); // At this point, all worker threads should take turns popping tris off to draw
+	
+	while(mTrisDone < (int)mTrisRender.size()) { // Wait until threads handle drawing all triangles
+		// std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+	// mTaskMutex.lock();
+	// std::cout << "rendered ttc=" << testTriCount << " out of nt=" << mTrisRender.size() << " tris" << std::endl;
+	testTriCount = 0;
+	// std::this_thread::sleep_for(std::chrono::milliseconds(600));
 
 	SDL_UpdateTexture
 		(
@@ -74,6 +103,19 @@ void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, c
 		mTextureSizeX * 4
 		);
 	SDL_RenderCopy(mRenderer, mTexture, NULL, &mTextureScaledBounds);
+
+}
+
+void Renderer::stop() {
+	mRunning = false;
+	for(auto& t : mThreadPool) {
+		std::cout << "joining..." << std::endl;
+		if(t.joinable()) {
+			t.join();
+		} else {
+			std::cout << "not joinable!" << std::endl;
+		}
+	}
 }
 
 void Renderer::drawDebugVerts() {
@@ -203,100 +245,122 @@ uint16_t Renderer::scaledVertDepth(double dw) {
 	return r;
 }
 
-void Renderer::fakeFragmentShader(const Light& light) {
+void Renderer::fakeFragmentShaderThreadFunction() {
+	while(mRunning) {
+		{
+			std::unique_lock<std::mutex> lock(mTaskMutex);
+			mTrisCondition.wait(lock, [this]{return mTrisRender.size() > 0 && mTrisIndex < mTrisRender.size();});
+			// std::cout << "drawing at i=" << mTrisIndex << ", size=" << mTrisRender.size() << std::endl;
+			mTrisIndex++;
+		}
+		// std::cout << "start..." << std::endl;
+		fakeFragmentShader(mTrisIndex-1);
+		mTrisDone++;
+		// std::cout << "end" << std::endl;
+	}
+
+	// std::cout << mTrisRender.size() << std::endl;
+}
+
+void Renderer::fakeFragmentShader(size_t triIndex) {
+	// if(triIndex > 965 || triIndex < 4) {
+		// std::cout << "  rendering triIndex=" << triIndex << ", trisDone=" << mTrisDone << ", testTriCount=" << testTriCount << std::endl;
+	// }
+	// testTriCount += 1;
 	// Calculates pixel colors from verts+tris+norms by rasterizing
 	// https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage
-	for(size_t i=0; i<mTrisRender.size(); i++) {
+	// Every tri should have a corresponding norm
+	std::array<size_t, 3>& tri = mTrisRender.at(triIndex);
+	MyVector& norm = mNormsRender.at(triIndex);
+	// std::cout << "mTrisRender.size()=" << mTrisRender.size() << ", triIndex=" << triIndex << ", tri=" << tri[0] << "," << tri[1] << "," << tri[2] << std::endl;
 
-		// Every tri should have a corresponding norm
-		std::array<size_t, 3>& tri = mTrisRender.at(i);
-		MyVector& norm = mNormsRender.at(i);
+	MyVector cameraToTri = MyVector(mCamera.cameraEye());
+	MyVector cullVert = mVertsWorldRender.at(tri[0]);
+	cameraToTri.scalar(-1).add(cullVert.dropW());
+	if(cameraToTri.dot(norm) >= 0) {
+		return;
+	}
 
-		MyVector cameraToTri = MyVector(mCamera.cameraEye());
-		MyVector cullVert = mVertsWorldRender.at(tri[0]);
-		cameraToTri.scalar(-1).add(cullVert.dropW());
-		if(cameraToTri.dot(norm) >= 0) {
-			continue;
-		}
+	MyVector triVertScreen1 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[0]))); // 3D
+	MyVector triVertScreen2 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[1])));
+	MyVector triVertScreen3 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[2])));
 
-		MyVector triVertScreen1 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[0]))); // 3D
-		MyVector triVertScreen2 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[1])));
-		MyVector triVertScreen3 = MyVector(shiftVertOrigin(mVertsScreenRender.at(tri[2])));
+	// MyVector triEdgeScreen1 = MyVector(triVertScreen1).scalar(-1).add(triVertScreen3); // For top-left rule
+	// MyVector triEdgeScreen2 = MyVector(triVertScreen2).scalar(-1).add(triVertScreen1);
+	// MyVector triEdgeScreen3 = MyVector(triVertScreen3).scalar(-1).add(triVertScreen2);
 
-		// MyVector triEdgeScreen1 = MyVector(triVertScreen1).scalar(-1).add(triVertScreen3); // For top-left rule
-		// MyVector triEdgeScreen2 = MyVector(triVertScreen2).scalar(-1).add(triVertScreen1);
-		// MyVector triEdgeScreen3 = MyVector(triVertScreen3).scalar(-1).add(triVertScreen2);
+	std::array<uint8_t, 3>& color1 = mColorsRender.at(tri[0]);
+	std::array<uint8_t, 3>& color2 = mColorsRender.at(tri[1]);
+	std::array<uint8_t, 3>& color3 = mColorsRender.at(tri[2]);
 
-		std::array<uint8_t, 3>& color1 = mColorsRender.at(tri[0]);
-		std::array<uint8_t, 3>& color2 = mColorsRender.at(tri[1]);
-		std::array<uint8_t, 3>& color3 = mColorsRender.at(tri[2]);
+	// double area = std::abs(edgeFunction(triVertScreen1, triVertScreen2, triVertScreen3)); // Why is this sometimes negative?
+	double area = edgeFunction(triVertScreen1, triVertScreen2, triVertScreen3); // Why doesn't it matter when this is negative?
 
-		// double area = std::abs(edgeFunction(triVertScreen1, triVertScreen2, triVertScreen3)); // Why is this sometimes negative?
-		double area = edgeFunction(triVertScreen1, triVertScreen2, triVertScreen3); // Why doesn't it matter when this is negative?
+	std::array<double, 3> triXs = {triVertScreen1.elem(0), triVertScreen2.elem(0), triVertScreen3.elem(0)};
+	std::array<double, 3> triYs = {triVertScreen1.elem(1), triVertScreen2.elem(1), triVertScreen3.elem(1)};
+	double triXBoundStart = std::max(0, (int)*(std::min_element(triXs.begin(), triXs.end())));
+	double triXBoundEnd = std::min(mTextureSizeX, 1 + (int)*(std::max_element(triXs.begin(), triXs.end())));
+	double triYBoundStart = std::max(0, (int)*(std::min_element(triYs.begin(), triYs.end())));
+	double triYBoundEnd = std::min(mTextureSizeY, 1 + (int)*(std::max_element(triYs.begin(), triYs.end())));
 
-		std::array<double, 3> triXs = {triVertScreen1.elem(0), triVertScreen2.elem(0), triVertScreen3.elem(0)};
-		std::array<double, 3> triYs = {triVertScreen1.elem(1), triVertScreen2.elem(1), triVertScreen3.elem(1)};
-		double triXBoundStart = std::max(0, (int)*(std::min_element(triXs.begin(), triXs.end())));
-		double triXBoundEnd = std::min(mTextureSizeX, 1 + (int)*(std::max_element(triXs.begin(), triXs.end())));
-		double triYBoundStart = std::max(0, (int)*(std::min_element(triYs.begin(), triYs.end())));
-		double triYBoundEnd = std::min(mTextureSizeY, 1 + (int)*(std::max_element(triYs.begin(), triYs.end())));
+	for(int x=triXBoundStart; x<triXBoundEnd; x++) {
+		for(int y=triYBoundStart; y<triYBoundEnd; y++) {
+			MyVector pixVert = MyVector({(double)x, (double)y, 0});
+			MyVector triVertWorld1 = MyVector(mVertsWorldRender.at(tri[0])); // 4D
+			MyVector triVertWorld2 = MyVector(mVertsWorldRender.at(tri[1]));
+			MyVector triVertWorld3 = MyVector(mVertsWorldRender.at(tri[2]));
 
-		for(int x=triXBoundStart; x<triXBoundEnd; x++) {
-			for(int y=triYBoundStart; y<triYBoundEnd; y++) {
-				MyVector pixVert = MyVector({(double)x, (double)y, 0});
-				MyVector triVertWorld1 = MyVector(mVertsWorldRender.at(tri[0])); // 4D
-				MyVector triVertWorld2 = MyVector(mVertsWorldRender.at(tri[1]));
-				MyVector triVertWorld3 = MyVector(mVertsWorldRender.at(tri[2]));
+			double w1 = edgeFunction(triVertScreen2, triVertScreen3, pixVert);
+			double w2 = edgeFunction(triVertScreen3, triVertScreen1, pixVert);
+			double w3 = edgeFunction(triVertScreen1, triVertScreen2, pixVert);
 
-				double w1 = edgeFunction(triVertScreen2, triVertScreen3, pixVert);
-				double w2 = edgeFunction(triVertScreen3, triVertScreen1, pixVert);
-				double w3 = edgeFunction(triVertScreen1, triVertScreen2, pixVert);
+			// Top-left rule, skipped for now because I don't think it's a problem (details in scratchapixel post above)
+			// bool shouldDraw = true;
+			// shouldDraw &= (w1 == 0 ? ((triEdgeScreen1.elem(1) == 0 && triEdgeScreen1.elem(0) < 0) ||  triEdgeScreen1.elem(1) < 0) : (w1 > 0));
+			// shouldDraw &= (w2 == 0 ? ((triEdgeScreen2.elem(1) == 0 && triEdgeScreen2.elem(0) < 0) ||  triEdgeScreen2.elem(1) < 0) : (w2 > 0));
+			// shouldDraw &= (w3 == 0 ? ((triEdgeScreen3.elem(1) == 0 && triEdgeScreen3.elem(0) < 0) ||  triEdgeScreen3.elem(1) < 0) : (w3 > 0));
+			if(w1 >= 0 && w2 >= 0 && w3 >= 0) {
+				w1 /= area;
+				w2 /= area;
+				w3 /= area;
 
-				// Top-left rule, skipped for now because I don't think it's a problem (details in scratchapixel post above)
-				// bool shouldDraw = true;
-				// shouldDraw &= (w1 == 0 ? ((triEdgeScreen1.elem(1) == 0 && triEdgeScreen1.elem(0) < 0) ||  triEdgeScreen1.elem(1) < 0) : (w1 > 0));
-				// shouldDraw &= (w2 == 0 ? ((triEdgeScreen2.elem(1) == 0 && triEdgeScreen2.elem(0) < 0) ||  triEdgeScreen2.elem(1) < 0) : (w2 > 0));
-				// shouldDraw &= (w3 == 0 ? ((triEdgeScreen3.elem(1) == 0 && triEdgeScreen3.elem(0) < 0) ||  triEdgeScreen3.elem(1) < 0) : (w3 > 0));
-				if(w1 >= 0 && w2 >= 0 && w3 >= 0) {
-					w1 /= area;
-					w2 /= area;
-					w3 /= area;
+				triVertWorld1.scalar(w1);
+				triVertWorld2.scalar(w2);
+				triVertWorld3.scalar(w3);
+				MyVector pixVertWorldInterp = MyVector(triVertWorld1);
+				pixVertWorldInterp.add(triVertWorld2);
+				pixVertWorldInterp.add(triVertWorld3);
+				// pixVertWorldInterp.scalar(1/pixVertWorldInterp.elem(3));
 
-					triVertWorld1.scalar(w1);
-					triVertWorld2.scalar(w2);
-					triVertWorld3.scalar(w3);
-					MyVector pixVertWorldInterp = MyVector(triVertWorld1);
-					pixVertWorldInterp.add(triVertWorld2);
-					pixVertWorldInterp.add(triVertWorld3);
-					// pixVertWorldInterp.scalar(1/pixVertWorldInterp.elem(3));
+				double depthWorld = pixVertWorldInterp.elem(2);
+				if(depthWorld < mZFar || depthWorld > mZNear) {
+					continue;
+				}
+				uint16_t depthScaled = scaledVertDepth(depthWorld);
+				size_t depthIndex = (y*mTextureSizeX) + x;
+				if(depthScaled >= mDepths[depthIndex]) {
+					continue;
+				}
 
-					double depthWorld = pixVertWorldInterp.elem(2);
-					if(depthWorld < mZFar || depthWorld > mZNear) {
-						continue;
-					}
-					uint16_t depthScaled = scaledVertDepth(depthWorld);
-					size_t depthIndex = (y*mTextureSizeX) + x;
-					if(depthScaled >= mDepths[depthIndex]) {
-						continue;
-					}
+				pixVertWorldInterp.dropW();
+				pixVertWorldInterp.normalize();
+
+				MyVector pixToLight = MyVector(pixVertWorldInterp);
+				pixToLight.scalar(-1);
+				pixToLight.add(mLight.position());
+				pixToLight.normalize();
+				double ambient = 0.15;
+				double diffuse = std::max(0.0, pixToLight.dot(norm));
+				double light = std::min(1.0, ambient + diffuse);
+				uint8_t ir = color1[0]*w1 + color2[0]*w2 + color3[0]*w3;
+				uint8_t ig = color1[1]*w1 + color2[1]*w2 + color3[1]*w3;
+				uint8_t ib = color1[2]*w1 + color2[2]*w2 + color3[2]*w3;
+
+				int arrayOffset = (y*mTextureSizeX*4) + (x*4);
+				{
+					std::unique_lock<std::mutex> lock(mDrawMutex);
 					mDepths[depthIndex] = depthScaled;
 
-					pixVertWorldInterp.dropW();
-					pixVertWorldInterp.normalize();
-
-					MyVector pixToLight = MyVector(pixVertWorldInterp);
-					pixToLight.scalar(-1);
-					pixToLight.add(light.position());
-					pixToLight.normalize();
-					double ambient = 0.15;
-					double diffuse = std::max(0.0, pixToLight.dot(norm));
-					double light = std::min(1.0, ambient + diffuse);
-
-					uint8_t ir = color1[0]*w1 + color2[0]*w2 + color3[0]*w3;
-					uint8_t ig = color1[1]*w1 + color2[1]*w2 + color3[1]*w3;
-					uint8_t ib = color1[2]*w1 + color2[2]*w2 + color3[2]*w3;
-
-					int arrayOffset = (y*mTextureSizeX*4) + (x*4);
 					mPixels[arrayOffset + 0] = ib * light;
 					mPixels[arrayOffset + 1] = ig * light;
 					mPixels[arrayOffset + 2] = ir * light;
@@ -306,5 +370,6 @@ void Renderer::fakeFragmentShader(const Light& light) {
 			}
 		}
 	}
+	// std::this_thread::sleep_for(std::chrono::milliseconds(40));
 
 }

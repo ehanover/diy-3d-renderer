@@ -7,15 +7,20 @@
 #include "object.h"
 #include <SDL2/SDL.h>
 #include <array>
+#include <atomic>
+#include <condition_variable>
 #include <functional>
+#include <mutex>
+#include <thread>
 #include <vector>
 
 class Renderer {
 
 public:
-	Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, double zNear, double zFar);
+	Renderer(SDL_Renderer* renderer, float textureScale, Light light, Camera camera, double zNear, double zFar);
 
-	void render(const std::vector<std::reference_wrapper<Object>>& objs, const Light& light);
+	void render(const std::vector<std::reference_wrapper<Object>>& objs);
+	void stop();
 
 private:
 
@@ -45,10 +50,13 @@ private:
 	Fragment shader:
 	Generates a color for every pixel, using steps like rasterization.
 	*/
-	void fakeFragmentShader(const Light& light);
+	void fakeFragmentShader(size_t triIndex);
 	std::vector<double> shiftVertOrigin(const MyVector& v);
 	double edgeFunction(const MyVector& a, const MyVector& b, const MyVector& c);
 	uint16_t scaledVertDepth(double dw);
+
+	// https://stackoverflow.com/questions/15752659/thread-pooling-in-c11
+	void fakeFragmentShaderThreadFunction();
 
 	SDL_Renderer* mRenderer;
 	int mTextureSizeX;
@@ -56,6 +64,7 @@ private:
 	SDL_Rect mTextureScaledBounds;
 	SDL_Texture* mTexture;
 
+	Light mLight;
 	Camera mCamera;
 	double mZNear;
 	double mZFar;
@@ -69,5 +78,15 @@ private:
 
 	std::vector<uint8_t> mPixels;
 	std::vector<uint16_t> mDepths; // uint16_t is lowest level of recommended precision, according to wikipedia
+
+	bool mRunning;
+	std::vector<std::thread> mThreadPool;
+	std::condition_variable mTrisCondition;
+	std::atomic_size_t mTrisIndex;
+	std::atomic_int mTrisDone;
+	std::mutex mTaskMutex;
+	std::mutex mDrawMutex;
+
+	std::atomic_int testTriCount;
 
 };

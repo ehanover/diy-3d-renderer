@@ -17,9 +17,9 @@ using namespace std;
 
 
 int main() {
-	const int WINDOW_HEIGHT = 600;
+	const int WINDOW_HEIGHT = 800;
 	const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (4.0/3));
-	const double RENDERER_SCALE = 0.5;
+	const double RENDERER_SCALE = 0.7;
 	
 	Object loadedObj = loadStl("assets/monkey.stl");
 
@@ -50,8 +50,9 @@ int main() {
 
 	Camera mycamera(0, 1, 4, 0, 0, 0, 0, 1, 0);
 	Light mylight(0, 1, 4);
-	vector<reference_wrapper<Object>> objs{pyramidObj, loadedObj}; // Should this store pointers/references?
-	Renderer myrenderer(renderer, RENDERER_SCALE, mycamera, 3, -3);
+	// vector<reference_wrapper<Object>> objs{pyramidObj, loadedObj}; // Should this store pointers/references?
+	vector<reference_wrapper<Object>> objs{loadedObj};
+	Renderer myrenderer(renderer, RENDERER_SCALE, mylight, mycamera, 3, -3);
 
 	SDL_Event event;
 	Uint32 fpsTimeNow = SDL_GetTicks();
@@ -74,7 +75,7 @@ int main() {
 		loadedObj.setRotation( {0, loadedObj.rotation()[1] + 0.0006*deltaTime, 0} );
 
 		// Draw
-		myrenderer.render(objs, mylight);
+		myrenderer.render(objs);
 		SDL_RenderPresent(renderer);
 
 		// Calculate and print FPS
@@ -87,6 +88,7 @@ int main() {
 		}
 
 	}
+	myrenderer.stop();
 
 	// Clean up
 	SDL_DestroyRenderer(renderer);
