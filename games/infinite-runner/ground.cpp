@@ -33,42 +33,76 @@ Ground::Ground() :
 	tileSizeZ(6),
 	groundSafe(loadStl("assets/ground_plain.stl")), // Maybe I should model more variety for safe/dangerous ground
 	groundDeath(loadStl("assets/ground_spikes.stl")),
-	groundObjs()
+	groundObjsActive(),
+
+	envSpawnProbability(85), // Probability to spawn in a row
+	envObjs({loadStl("assets/cactus1.stl"), loadStl("assets/cactus2.stl")}),
+	envObjsActive()
 {
 	groundSafe.setColor({240, 200, 100});
 	// groundDeath.setColor({90, 80, 60});
 	groundDeath.setColorFunction(&groundDeathColorFunc);
 
-	groundObjs.reserve(numX*numZ);
+	envObjs[0].setColor({80, 150, 50});
+	envObjs[1].setColor({60, 130, 30});
+
+	groundObjsActive.reserve(numX*numZ);
 	for(int i=0; i<numZ; i++) {
+		double z = -35 + -i * tileSizeZ;
 		for(int j=0; j<numX; j++) {
 			Object o = generateNewGround();
 			double x = -(numX*tileSizeX)/2.0 + j*tileSizeX;
-			double z = -35 + -i * tileSizeZ;
 			o.setPosition({x, 0, z});
-			groundObjs.push_back(o);
+			groundObjsActive.push_back(o);
+		}
+		if(myRandomPercent() < envSpawnProbability) {
+			Object o = generateNewEnv();
+			o.setPosition({o.position()[0], 0, z});
+			envObjsActive.push_back(o);
 		}
 	}
 }
 
 std::vector<std::reference_wrapper<Object>> Ground::getObjects() {
 	std::vector<std::reference_wrapper<Object>> r;
-	r.reserve(groundObjs.size());
-	for(auto& o : groundObjs) {
+	r.reserve(groundObjsActive.size() + envObjsActive.size());
+	for(auto& o : groundObjsActive) {
+		r.push_back(o);
+	}
+	for(auto& o : envObjsActive) {
 		r.push_back(o);
 	}
 	return r;
 }
 
 void Ground::update(int deltaMS) {
-	for(Object& o : groundObjs) {
+	bool rowOffScreen = false;
+	for(Object& o : groundObjsActive) {
 		std::array<double, 3> oldPosition = o.position();
 
 		if(oldPosition[2] > tileSizeZ + 1) {
+			rowOffScreen = true;
 			o = generateNewGround();
 			oldPosition[2] -= numZ * tileSizeZ;
 		}
 		o.setPosition({oldPosition[0], oldPosition[1], oldPosition[2] + groundSpeed*deltaMS});
+	}
+	for(std::vector<Object>::iterator it=envObjsActive.begin(); it!=envObjsActive.end();) {
+		std::array<double, 3> oldPosition = it->position();
+		if(oldPosition[2] > 1) {
+			envObjsActive.erase(it);
+		} else {
+			it->setPosition({oldPosition[0], oldPosition[1], oldPosition[2] + groundSpeed*deltaMS});
+			it++;
+		}
+	}
+
+	if(rowOffScreen) {
+		if(myRandomPercent() < envSpawnProbability) {
+			Object o = generateNewEnv();
+			o.setPosition({o.position()[0], 0, -numZ * tileSizeZ});
+			envObjsActive.push_back(o);
+		}
 	}
 	
 	if(safeGroundProbability > 35) {
@@ -92,4 +126,15 @@ Object Ground::generateNewGround() {
 		Object o = groundDeath;
 		return o;
 	}
+}
+
+Object Ground::generateNewEnv() {
+	float minX = numX * (tileSizeX + 1) / 2.0;
+	float maxX = 50;
+	float r = myRandomPercent()/100.0;
+	double x = (minX + (maxX-minX)*r) * (myRandomPercent() > 50 ? 1 : -1);
+	Object o = envObjs.at(myRandomPercent() % envObjs.size());
+	o.setPosition({x, 0, 0});
+	o.setRotation({0, myRandomPercent()/16.0, 0});
+	return o;
 }

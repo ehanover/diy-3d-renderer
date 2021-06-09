@@ -51,7 +51,7 @@ int main() {
 	Camera mycamera(0, 1, 4, 0, 0, 0, 0, 1, 0);
 	Light mylight(0, 1, 4);
 	vector<reference_wrapper<Object>> objs{pyramidObj, loadedObj}; // Should this store pointers/references?
-	Renderer myrenderer(renderer, RENDERER_SCALE, mycamera, 3, -3);
+	Renderer myrenderer(renderer, RENDERER_SCALE, mycamera, vector<uint8_t>(), 3, -3);
 
 	SDL_Event event;
 	Uint32 fpsTimeNow = SDL_GetTicks();

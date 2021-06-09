@@ -13,7 +13,7 @@
 class Renderer {
 
 public:
-	Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, double zNear, double zFar);
+	Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, std::vector<uint8_t> background, double zNear, double zFar);
 
 	void render(const std::vector<std::reference_wrapper<Object>>& objs, const Light& light);
 
@@ -60,6 +60,7 @@ private:
 	double mZNear;
 	double mZFar;
 	MyMatrix mPerspectiveMat;
+	std::vector<uint8_t> mBackground;
 
 	std::vector<MyVector> mVertsWorldRender;
 	std::vector<MyVector> mVertsScreenRender;

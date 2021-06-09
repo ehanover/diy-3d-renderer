@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, double zNear, double zFar) :
+Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, std::vector<uint8_t> background, double zNear, double zFar) :
 	mRenderer(renderer),
 	mTextureSizeX(0),
 	mTextureSizeY(0),
@@ -14,6 +14,7 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, do
 	mZNear(zNear),
 	mZFar(zFar),
 	mPerspectiveMat(),
+	mBackground(background),
 
 	mVertsWorldRender(),
 	mVertsScreenRender(),
@@ -37,6 +38,11 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, do
 	mPixels = std::vector<uint8_t>(mTextureSizeX * mTextureSizeY * 4);
 	mDepths = std::vector<uint16_t>(mTextureSizeX * mTextureSizeY);
 
+	if(mBackground.size() < mPixels.size()) { // invalid background was given, so fall back to plain solid background
+		mBackground = std::vector<uint8_t>(mPixels.size());
+		std::fill(mBackground.begin(), mBackground.end(), 100);
+	}
+
 	// Perspective
 	// https://www.techspot.com/article/1888-how-to-3d-rendering-rasterization-ray-tracing/
 	double worldScale = std::min(mTextureSizeX, mTextureSizeY);
@@ -51,7 +57,8 @@ Renderer::Renderer(SDL_Renderer* renderer, float textureScale, Camera camera, do
 }
 
 void Renderer::render(const std::vector<std::reference_wrapper<Object>>& objs, const Light& light) {
-	std::fill(mPixels.begin(), mPixels.end(), 180);
+	// std::fill(mPixels.begin(), mPixels.end(), 180);
+	mPixels = mBackground;
 	std::fill(mDepths.begin(), mDepths.end(), (2>>16)-1);
 
 	mVertsWorldRender.clear();

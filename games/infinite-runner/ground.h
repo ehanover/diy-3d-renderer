@@ -24,7 +24,12 @@ private:
 
 	float tileSizeX, tileSizeZ;
 	Object groundSafe, groundDeath;
-	std::vector<Object> groundObjs;
+	std::vector<Object> groundObjsActive;
 	Object generateNewGround();
+
+	float envSpawnProbability;
+	std::vector<Object> envObjs;
+	std::vector<Object> envObjsActive;
+	Object generateNewEnv();
 
 };

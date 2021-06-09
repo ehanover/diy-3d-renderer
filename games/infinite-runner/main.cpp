@@ -30,12 +30,11 @@ using namespace std;
 int main() {
 	// const int WINDOW_HEIGHT = 750;
 	// const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (4.0/3));
+	// const double RENDERER_SCALE = 0.35;
 	const int WINDOW_HEIGHT = 700;
 	const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (16.0/9));
-	// const double RENDERER_SCALE = 0.35;
-	const double RENDERER_SCALE = 0.45;
+	const double RENDERER_SCALE = 0.45; // 1 = each final pixel is rendered by the renderer, there's no upscaling
 	
-	// Basic SDL: https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
 	// Fast pixel drawing: https://stackoverflow.com/questions/33304351/
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 		cout << "SDL_Init Error: " << SDL_GetError() << endl;
@@ -57,9 +56,26 @@ int main() {
 		return 1;
 	}
 
+	vector<uint8_t> mybackground;
+	mybackground.reserve(WINDOW_WIDTH*WINDOW_HEIGHT*RENDERER_SCALE*4);
+	float skyHeight = 0.219686; // Dumb hardcoded number so that the horizon is a straight line
+	int skyPixels = mybackground.capacity()*skyHeight;
+	for(int i=0; i<skyPixels/4; i++) {
+		mybackground.push_back(245);  // BGR
+		mybackground.push_back(152);
+		mybackground.push_back(56);
+		mybackground.push_back(SDL_ALPHA_OPAQUE);
+	}
+	for(int i=0; i<(mybackground.capacity() - skyPixels)/4; i++) {
+		mybackground.push_back(77);
+		mybackground.push_back(155);
+		mybackground.push_back(185);
+		mybackground.push_back(SDL_ALPHA_OPAQUE);
+	}
+
 	Camera mycamera(0, 5, 12, 0, 4, 0, 0, 1, 0);
 	Light mylight(4,5,4); // TODO experiment with light position
-	Renderer myrenderer(renderer, RENDERER_SCALE, mycamera, 2, -6*9);
+	Renderer myrenderer(renderer, RENDERER_SCALE, mycamera, mybackground, 2, -6*9);
 
 	Player player;
 	Ground ground;
@@ -74,7 +90,6 @@ int main() {
 	unsigned int deltaMS;
 
 	while(1) {
-
 		// Find delta time
 		fpsTimeNow = SDL_GetTicks();
 		deltaMS = (fpsTimeNow - fpsLastFrameTime);

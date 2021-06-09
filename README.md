@@ -1,9 +1,17 @@
 # DIY-OpenGL
 
-My exploration of 3D rendering, without using OpenGL or any other 3D graphics libraries. 
+A toy 3D renderer built without any 3D graphics libraries. Every pixel is rendered from scratch!
+
+**Features I've implemented:** custom matrix and vector classes, object transformations, projection+perspective projections, camera movement, triangle rasterization, normal creation, backface+frustum culling, STL importing, ambient+diffuse lighting, z-buffering, hacky vertex coloring
+
+**Features I want to implement:** object texturing, specular lighting (Phong), support for multiple lights, multithreading, background images from a file, text rendering, general optimizations
+
+**Current problems:** shaders should belong to objects, renderer class is too big, unclear standard for individually coloring vertices, overall too slow to use higher resolutions
+
+<br>
 
 ```
-sudo apt install cmake libsdl2-2.0-0 libsdl2-dev
+sudo apt install libsdl2-2.0-0 libsdl2-dev cmake
 
 git clone https://github.com/ehanover/diy-opengl.git
 cd diy-opengl
@@ -15,14 +23,6 @@ make && cmake --install . --prefix ".."
 
 <br>
 
-**Features I've implemented:** custom matrix and vector classes, object transformations, projection+perspective projections, camera movement, triangle rasterization, normal creation, backface+frustum culling, STL importing, ambient+diffuse lighting, z-buffering
-
-**Features I want to implement:** FPS upper bounding, texturing, specular lighting (Phong), support for multiple lights, object coloring, multithreading (is this doable?), general optimization
-
-**Current problems:** shaders should belong to objects, unclear standard for individually coloring vertices
-
-<br>
-
 Resources I've used
 * Graphics overview: https://en.wikipedia.org/wiki/Graphics_pipeline
 * Coordinate systems: https://learnopengl.com/Getting-started/Coordinate-Systems
@@ -31,4 +31,6 @@ Resources I've used
 * Rasterization and interpolation: https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage
 * Fragment interpolation for coloring: https://paroj.github.io/gltut/Illumination/Tut10%20Fragment%20Lighting.html
 * Lighting concepts: https://learnopengl.com/Lighting/Basic-Lighting
+* SDL setup basics: https://www.willusher.io/sdl2%20tutorials/2013/08/17/lesson-1-hello-world
 * STL files: http://www.jgxsoft.com/examples/STL%20Reader/STL%20Reader.html
+* Profiling with gprof: http://www.math.utah.edu/docs/info/gprof_toc.html
