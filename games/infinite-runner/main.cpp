@@ -10,6 +10,7 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-pg .. && make && cmake --ins
 
 #include "camera.h"
 #include "fileloader.h"
+#include "healthbar.h"
 #include "light.h"
 #include "mymatrix.h"
 #include "myvector.h"
@@ -33,7 +34,7 @@ int main() {
 	// const double RENDERER_SCALE = 0.35;
 	const int WINDOW_HEIGHT = 700;
 	const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (16.0/9));
-	const double RENDERER_SCALE = 0.45; // 1 = each final pixel is rendered by the renderer, there's no upscaling
+	const double RENDERER_SCALE = 0.45; // 1.0 = each final pixel is rendered by the renderer, there's no upscaling
 	
 	// Fast pixel drawing: https://stackoverflow.com/questions/33304351/
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -61,7 +62,7 @@ int main() {
 	float skyHeight = 0.219686; // Dumb hardcoded number so that the horizon is a straight line
 	int skyPixels = mybackground.capacity()*skyHeight;
 	for(int i=0; i<skyPixels/4; i++) {
-		mybackground.push_back(245);  // BGR
+		mybackground.push_back(245); // BGR
 		mybackground.push_back(152);
 		mybackground.push_back(56);
 		mybackground.push_back(SDL_ALPHA_OPAQUE);
@@ -76,6 +77,7 @@ int main() {
 	Camera mycamera(0, 5, 12, 0, 4, 0, 0, 1, 0);
 	Light mylight(4,5,4); // TODO experiment with light position
 	Renderer myrenderer(renderer, RENDERER_SCALE, mycamera, mybackground, 2, -6*9);
+	Healthbar healthbar(renderer);
 
 	Player player;
 	Ground ground;
@@ -88,8 +90,9 @@ int main() {
 	Uint32 fpsLastPrintTime = fpsTimeNow;
 	unsigned long ticks = 0;
 	unsigned int deltaMS;
+	Uint32 startTime = fpsTimeNow; // Used for final printing of score
 
-	while(1) {
+	while(true) {
 		// Find delta time
 		fpsTimeNow = SDL_GetTicks();
 		deltaMS = (fpsTimeNow - fpsLastFrameTime);
@@ -128,6 +131,14 @@ int main() {
 		player.update(deltaMS);
 		ground.update(deltaMS);
 
+		if(ground.isGroundSafe(player.playerPosition[0]) == false && player.playerPosition[1] < 0.75) {
+			player.isHurting = true;
+			player.health -= 0.00035 * deltaMS;
+			// cout << "ow! health=" << player.health << endl;
+		} else {
+			player.isHurting = false;
+		}
+
 		// Render
 		vector<reference_wrapper<Object>> objs;
 		for(Object& o : ground.getObjects()) {
@@ -137,7 +148,14 @@ int main() {
 			objs.push_back(o);
 		}
 		myrenderer.render(objs, mylight);
+		healthbar.render(player.health);
 		SDL_RenderPresent(renderer);
+
+		if(player.health <= 0) { // This is belongs in the update section, but it works better here because the player should look red upon dying
+			// It would also be cool to add a special pose for the player when he dies
+			this_thread::sleep_for(chrono::milliseconds(1500)); // Freeze the game for a bit when you die
+			break;
+		}
 
 		// Calculate and print FPS
 		fpsFrameCount++;
@@ -152,8 +170,10 @@ int main() {
 	}
 
 	// Clean up
+	cout << "You survived for " << (SDL_GetTicks() - startTime)/1000 << " seconds. Thanks for playing!" << endl;
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
+
 	return 0;
 }

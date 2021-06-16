@@ -6,7 +6,7 @@ A toy 3D renderer built without any 3D graphics libraries. Every pixel is render
 
 **Features I want to implement:** object texturing, specular lighting (Phong), support for multiple lights, multithreading, background images from a file, text rendering, general optimizations
 
-**Current problems:** shaders should belong to objects, renderer class is too big, unclear standard for individually coloring vertices, overall too slow to use higher resolutions
+**Current problems:** shaders should belong to objects, renderer class is too big, unclear standard for individually coloring vertices, overall too slow when using higher resolutions
 
 <br>
 
@@ -22,8 +22,9 @@ make && cmake --install . --prefix ".."
 ```
 
 <br>
+<br>
 
-Resources I've used
+Resources I've used:
 * Graphics overview: https://en.wikipedia.org/wiki/Graphics_pipeline
 * Coordinate systems: https://learnopengl.com/Getting-started/Coordinate-Systems
 * Projection and perspective, transformations: http://codeofthedamned.com/index.php/3d-projection-and-matrix-transforms

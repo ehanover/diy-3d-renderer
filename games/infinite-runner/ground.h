@@ -5,6 +5,11 @@
 #include <vector>
 #include <functional>
 
+struct GroundTile {
+	Object object;
+	bool isSafe;
+};
+
 class Ground {
 
 public:
@@ -18,14 +23,15 @@ public:
 private:
 	int numX, numZ;
 	float groundSpeed;
+	size_t frontTileIndex;
 
 	unsigned long totalMS;
 	float safeGroundProbability;
 
 	float tileSizeX, tileSizeZ;
 	Object groundSafe, groundDeath;
-	std::vector<Object> groundObjsActive;
-	Object generateNewGround();
+	std::vector<GroundTile> groundObjsActive;
+	GroundTile generateNewGround();
 
 	float envSpawnProbability;
 	std::vector<Object> envObjs;

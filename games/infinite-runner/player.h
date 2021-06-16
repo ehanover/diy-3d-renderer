@@ -17,15 +17,20 @@ public:
 
 	bool isMovingLeft;
 	bool isMovingRight;
+	bool isHurting;
+
+	float health;
+	std::array<double, 3> playerPosition;
 
 private:
 	std::array<double, 3> hatPos, headPos, torsoPos, armRPos, armLPos, legRPos, legLPos;
 	Object hat, head, torso, armR, armL, legR, legL;
+	std::array<uint8_t, 3> colorSkin;
+	std::array<uint8_t, 3> colorSkinHurt;
 
 	bool isGrounded;
 	unsigned long walkMS;
 
-	std::array<double, 3> playerPosition;
 	float yVel;
 	float yAcc;
 

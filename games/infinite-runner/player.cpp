@@ -6,6 +6,7 @@ Player::Player() :
 
 	isMovingLeft(false),
 	isMovingRight(false),
+	isHurting(false),
 
 	hatPos({0, 0, 0}),
 	headPos({0, 0, 0}),
@@ -22,17 +23,19 @@ Player::Player() :
 	armL(armR),
 	legR(loadStl("assets/person_leg.stl")),
 	legL(legR),
+	colorSkin({230, 200, 150}),
+	colorSkinHurt({210, 90, 70}),
 
+	health(1.0),
 	isGrounded(true),
 	walkMS(0),
 
-	playerPosition({0, 0, 0}),
+	playerPosition({0, 0, 0.9}),
 	yVel(0),
 	yAcc(0)
 {
 	std::array<uint8_t, 3> colorClothes = {150, 100, 80};
 	std::array<uint8_t, 3> colorClothesDark = {70, 50, 40};
-	std::array<uint8_t, 3> colorSkin = {230, 200, 150};
 	hat.setColor(colorClothes);
 	hat.setPosition(hatPos);
 	head.setColor(colorSkin);
@@ -76,10 +79,20 @@ void Player::update(int deltaMS) {
 
 	}
 
-	if(isMovingLeft) {
+	if(isMovingLeft && playerPosition[0] > -7) {
 		playerPosition[0] += -0.007 * deltaMS;
-	} else if(isMovingRight) {
+	} else if(isMovingRight && playerPosition[0] < 7) {
 		playerPosition[0] += 0.007 * deltaMS;
+	}
+
+	if(isHurting) {
+		head.setColor(colorSkinHurt);
+		armL.setColor(colorSkinHurt);
+		armR.setColor(colorSkinHurt);
+	} else {
+		head.setColor(colorSkin);
+		armL.setColor(colorSkin);
+		armR.setColor(colorSkin);
 	}
 
 	hat.setPosition({hatPos[0] + playerPosition[0], hatPos[1] + playerPosition[1]*1.1, hatPos[2] + playerPosition[2]});

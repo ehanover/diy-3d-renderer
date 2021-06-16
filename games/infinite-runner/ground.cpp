@@ -24,10 +24,11 @@ std::array<uint8_t, 3> groundDeathColorFunc(const MyVector& v) {
 Ground::Ground() :
 	numX(5),
 	numZ(9),
-	groundSpeed(0.013),
+	groundSpeed(0.014),
+	frontTileIndex(0),
 
 	totalMS(0),
-	safeGroundProbability(70),
+	safeGroundProbability(65),
 
 	tileSizeX(3),
 	tileSizeZ(6),
@@ -35,12 +36,11 @@ Ground::Ground() :
 	groundDeath(loadStl("assets/ground_spikes.stl")),
 	groundObjsActive(),
 
-	envSpawnProbability(85), // Probability to spawn in a row
+	envSpawnProbability(90), // Probability to spawn in a row
 	envObjs({loadStl("assets/cactus1.stl"), loadStl("assets/cactus2.stl")}),
 	envObjsActive()
 {
 	groundSafe.setColor({240, 200, 100});
-	// groundDeath.setColor({90, 80, 60});
 	groundDeath.setColorFunction(&groundDeathColorFunc);
 
 	envObjs[0].setColor({80, 150, 50});
@@ -48,12 +48,12 @@ Ground::Ground() :
 
 	groundObjsActive.reserve(numX*numZ);
 	for(int i=0; i<numZ; i++) {
-		double z = -35 + -i * tileSizeZ;
+		double z = -45 + -i * tileSizeZ; // As i increases, tiles get farther away. The constant value determines how far away the tiles start
 		for(int j=0; j<numX; j++) {
-			Object o = generateNewGround();
+			GroundTile gt = generateNewGround();
 			double x = -(numX*tileSizeX)/2.0 + j*tileSizeX;
-			o.setPosition({x, 0, z});
-			groundObjsActive.push_back(o);
+			gt.object.setPosition({x, 0, z});
+			groundObjsActive.push_back(gt);
 		}
 		if(myRandomPercent() < envSpawnProbability) {
 			Object o = generateNewEnv();
@@ -66,8 +66,8 @@ Ground::Ground() :
 std::vector<std::reference_wrapper<Object>> Ground::getObjects() {
 	std::vector<std::reference_wrapper<Object>> r;
 	r.reserve(groundObjsActive.size() + envObjsActive.size());
-	for(auto& o : groundObjsActive) {
-		r.push_back(o);
+	for(auto& gt : groundObjsActive) {
+		r.push_back(gt.object);
 	}
 	for(auto& o : envObjsActive) {
 		r.push_back(o);
@@ -77,15 +77,15 @@ std::vector<std::reference_wrapper<Object>> Ground::getObjects() {
 
 void Ground::update(int deltaMS) {
 	bool rowOffScreen = false;
-	for(Object& o : groundObjsActive) {
-		std::array<double, 3> oldPosition = o.position();
+	for(GroundTile& gt : groundObjsActive) {
+		std::array<double, 3> oldPosition = gt.object.position();
 
 		if(oldPosition[2] > tileSizeZ + 1) {
 			rowOffScreen = true;
-			o = generateNewGround();
+			gt = generateNewGround();
 			oldPosition[2] -= numZ * tileSizeZ;
 		}
-		o.setPosition({oldPosition[0], oldPosition[1], oldPosition[2] + groundSpeed*deltaMS});
+		gt.object.setPosition({oldPosition[0], oldPosition[1], oldPosition[2] + groundSpeed*deltaMS});
 	}
 	for(std::vector<Object>::iterator it=envObjsActive.begin(); it!=envObjsActive.end();) {
 		std::array<double, 3> oldPosition = it->position();
@@ -98,6 +98,11 @@ void Ground::update(int deltaMS) {
 	}
 
 	if(rowOffScreen) {
+		frontTileIndex += 1; // Keeps track of which row of tiles is/will be under the player. Multiply this by numX to get the actual index
+		if(frontTileIndex >= numZ) {
+			frontTileIndex = 0;
+		}
+
 		if(myRandomPercent() < envSpawnProbability) {
 			Object o = generateNewEnv();
 			o.setPosition({o.position()[0], 0, -numZ * tileSizeZ});
@@ -105,26 +110,25 @@ void Ground::update(int deltaMS) {
 		}
 	}
 	
-	if(safeGroundProbability > 35) {
-		safeGroundProbability -= 0.014;
+	if(safeGroundProbability > 30) {
+		safeGroundProbability -= 0.013;
 	}
-	if(groundSpeed < 0.028) {
+	if(groundSpeed < 0.03) {
 		groundSpeed += 0.000008;
 	}
 
 }
 
 bool Ground::isGroundSafe(double playerX) {
-	return true;
+	int idx = (frontTileIndex * numX) + ((playerX+tileSizeX/2.0) / (numX*tileSizeX))*numX + numX/2;
+	return groundObjsActive[idx].isSafe || groundObjsActive[idx].object.position()[2] < 0;
 }
 
-Object Ground::generateNewGround() {
-	if(myRandomPercent() < safeGroundProbability) { // The ground is a safe tile
-		Object o = groundSafe;
-		return o;
-	} else {  // The ground is a dangerous tile
-		Object o = groundDeath;
-		return o;
+GroundTile Ground::generateNewGround() {
+	if(myRandomPercent() < safeGroundProbability) {
+		return GroundTile{groundSafe, true}; // The ground is a safe tile
+	} else {
+		return GroundTile{groundDeath, false}; // The ground is a dangerous tile
 	}
 }
 
