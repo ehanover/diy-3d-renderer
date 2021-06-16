@@ -18,13 +18,13 @@ project(diy-opengl VERSION 2.0.0)
 add_subdirectory(diy-engine)
 
 # Game (engine-test)
-add_subdirectory(games/engine-test)
-install(FILES "build/games/engine-test/engine-test" DESTINATION "build" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
-install(DIRECTORY "games/engine-test/assets" DESTINATION "build")
+add_subdirectory(demos/engine-test)
+install(FILES "build/demos/engine-test/engine-test" DESTINATION "build" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+install(DIRECTORY "demos/engine-test/assets" DESTINATION "build")
 
-# Game (infinite-runner)
-add_subdirectory(games/infinite-runner)
-install(FILES "build/games/infinite-runner/infinite-runner" DESTINATION "build" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
-install(DIRECTORY "games/infinite-runner/assets" DESTINATION "build")
+# Game (infinite-runner-game)
+add_subdirectory(demos/infinite-runner-game)
+install(FILES "build/demos/infinite-runner-game/infinite-runner-game" DESTINATION "build" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+install(DIRECTORY "demos/infinite-runner-game/assets" DESTINATION "build")
 
 

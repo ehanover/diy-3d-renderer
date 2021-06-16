@@ -17,9 +17,9 @@ using namespace std;
 
 
 int main() {
-	const int WINDOW_HEIGHT = 600;
+	const int WINDOW_HEIGHT = 400;
 	const int WINDOW_WIDTH = (int) (WINDOW_HEIGHT * (4.0/3));
-	const double RENDERER_SCALE = 0.5;
+	const double RENDERER_SCALE = 1.0;
 	
 	Object loadedObj = loadStl("assets/monkey.stl");
 
@@ -67,10 +67,10 @@ int main() {
 
 		// Update
 		fpsTimeNow = SDL_GetTicks();
-		int deltaTime = (fpsTimeNow - fpsLastFrameTime);// / 1000.0;
+		int deltaTime = (fpsTimeNow - fpsLastFrameTime);
 		fpsLastFrameTime = fpsTimeNow;
 
-		pyramidObj.setRotation( {0, pyramidObj.rotation()[1] + -0.0008*deltaTime, 0} );
+		pyramidObj.setRotation( {pyramidObj.rotation()[0] + -0.0015*deltaTime, pyramidObj.rotation()[1] + -0.0008*deltaTime, 0} );
 		loadedObj.setRotation( {0, loadedObj.rotation()[1] + 0.0006*deltaTime, 0} );
 
 		// Draw

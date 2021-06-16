@@ -1,7 +1,7 @@
-# infinite-runner
+# infinite-runner-game
 # Using "include" folder from a library in the same project: https://stackoverflow.com/a/47060462
 
-set(MyGameName "infinite-runner")
+set(MyGameName "infinite-runner-game")
 set(MySources main.cpp ground.cpp healthbar.cpp player.cpp)
 
 # Add source files

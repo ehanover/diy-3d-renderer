@@ -1,24 +1,28 @@
-# DIY-OpenGL
+# DIY-3D-Renderer
 
-A toy 3D renderer built without any 3D graphics libraries. Every pixel is rendered from scratch!
+A toy 3D renderer built without any 3D graphics libraries. Every pixel is drawn from scratch!
+
+I originally wanted to learn how to use OpenGL to create 3D graphics, but I found it so hard to understand. Making my own simple 3D renderer taught me about so many fundamental concepts in 3D graphics, so hopefully learning OpenGL will be easier now.
+
+In order to show what the engine can do, I made a simple game under ```demos/infinite-runner-game```. You have to move and jump to avoid the spikes. Try to stay alive as long as you can!
 
 **Features I've implemented:** custom matrix and vector classes, object transformations, projection+perspective projections, camera movement, triangle rasterization, normal creation, backface+frustum culling, STL importing, ambient+diffuse lighting, z-buffering, hacky vertex coloring
 
 **Features I want to implement:** object texturing, specular lighting (Phong), support for multiple lights, multithreading, background images from a file, text rendering, general optimizations
 
-**Current problems:** shaders should belong to objects, renderer class is too big, unclear standard for individually coloring vertices, overall too slow when using higher resolutions
+**Current problems:** overall too slow and unoptimized, shaders should belong to objects, renderer class is too big, no clear file standard for individually coloring vertices
 
 <br>
 
 ```
 sudo apt install libsdl2-2.0-0 libsdl2-dev cmake
 
-git clone https://github.com/ehanover/diy-opengl.git
+git clone https://github.com/ehanover/diy-3d-renderer.git
 cd diy-opengl
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make && cmake --install . --prefix ".."
-./infinite-runner
+./infinite-runner-game
 ```
 
 <br>
